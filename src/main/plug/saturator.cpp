@@ -62,11 +62,12 @@ namespace lsp
                     ++nChannels;
 
             // Initialize other parameters
+            nSampleRate     = 0;
+            nFilters        = 0;
             vChannels       = NULL;
             vBuffer         = NULL;
 
             pBypass         = NULL;
-            pGainOut        = NULL;
             pComment        = NULL;
 
             pData           = NULL;
@@ -101,21 +102,16 @@ namespace lsp
                 channel_t *c            = &vChannels[i];
 
                 // Construct in-place DSP processors
-                c->sLine.construct();
                 c->sBypass.construct();
+                c->sPreEQ.construct();
+                c->sOversampler.construct();
+                c->sShaper.construct();
+                c->sPostEQ.construct();
 
-                // Initialize fields
-                c->nDelay               = 0;
-                c->fDryGain             = 0.0f;
-                c->fWetGain             = 0.0f;
+                // TODO: Calls to equalizers init methods here?
 
                 c->pIn                  = NULL;
                 c->pOut                 = NULL;
-                c->pDelay               = NULL;
-                c->pDry                 = NULL;
-                c->pWet                 = NULL;
-
-                c->pOutDelay            = NULL;
             }
 
             // Bind ports
@@ -142,22 +138,15 @@ namespace lsp
                 {
                     channel_t *pc           = &vChannels[0];
 
-                    // Share some controls across all channels
-                    c->pDelay               = pc->pDelay;
-                    c->pDry                 = pc->pDry;
-                    c->pWet                 = pc->pWet;
+                    // TODO: Ports shared between channels go here
                 }
                 else
                 {
-                    // Initialize input controls for the first channel
-                    BIND_PORT(c->pDelay);
-                    BIND_PORT(c->pDry);
-                    BIND_PORT(c->pWet);
+                    // TODO: Initialize input controls for the first channel
                 }
             }
 
-            // Bind output gain
-            BIND_PORT(pGainOut);
+            // TODO: Bind output ports.
             BIND_PORT(pComment);
 
             // Bind output meters
@@ -168,14 +157,12 @@ namespace lsp
                 if (i > 0)
                 {
                     channel_t *pc           = &vChannels[0];
-                    // Share some meters across all channels
-                    c->pOutDelay            = pc->pOutDelay;
+                    // TODO: Output ports shared between channels go here
                 }
                 else
-                    BIND_PORT(c->pOutDelay);
-
-                BIND_PORT(c->pInLevel);
-                BIND_PORT(c->pOutLevel);
+                {
+                    // TODO: Initialize output ports for the first channel
+                }
             }
         }
 
@@ -194,7 +181,10 @@ namespace lsp
                 {
                     channel_t *c    = &vChannels[i];
                     c->sBypass.destroy();
-                    c->sLine.destroy();
+                    c->sPreEQ.destroy();
+                    c->sOversampler.destroy();
+                    c->sShaper.destroy();
+                    c->sPostEQ.destroy();
                 }
                 vChannels   = NULL;
             }
@@ -211,31 +201,33 @@ namespace lsp
 
         void saturator::update_sample_rate(long sr)
         {
+            if (sr == nSampleRate)
+                return;
+
             // Update sample rate for the bypass processors
             for (size_t i=0; i<nChannels; ++i)
             {
                 channel_t *c    = &vChannels[i];
-                c->sLine.init(dspu::millis_to_samples(sr, meta::saturator::DELAY_OUT_MAX_TIME));
                 c->sBypass.init(sr);
+                c->sPreEQ.set_sample_rate(sr);
+                c->sShaper.set_sample_rate(sr);
+                c->sPostEQ.set_sample_rate(sr);
             }
+
+            nSampleRate = sr;
         }
 
         void saturator::update_settings()
         {
-            float out_gain          = pGainOut->value();
             bool bypass             = pBypass->value() >= 0.5f;
 
             for (size_t i=0; i<nChannels; ++i)
             {
                 channel_t *c            = &vChannels[i];
 
-                // Store the parameters for each processor
-                c->fDryGain             = c->pDry->value() * out_gain;
-                c->fWetGain             = c->pWet->value() * out_gain;
-                c->nDelay               = c->pDelay->value();
+                // TODO: Store the parameters for each processor
 
-                // Update processors
-                c->sLine.set_delay(c->nDelay);
+                // TODO: Update processors
                 c->sBypass.set_bypass(bypass);
             }
 
@@ -265,28 +257,25 @@ namespace lsp
                 if ((in == NULL) || (out == NULL))
                     continue;
 
-                // Input and output gain meters
-                float in_gain           = 0.0f;
-                float out_gain          = 0.0f;
-
                 // Process the channel with BUFFER_SIZE chunks
                 // Note: since input buffer pointer can be the same to output buffer pointer,
                 // we need to store the processed signal data to temporary buffer before
                 // it gets processed by the dspu::Bypass processor.
                 for (size_t n=0; n<samples; )
                 {
-                    const size_t count      = lsp_min(samples - n, BUFFER_SIZE);
+                    const size_t to_do      = samples - n;
+                    const size_t to_do_up   = c->sOversamplerParams.nOversampling * to_do;
 
-                    // Pre-process signal (fill buffer)
-                    c->sLine.process_ramping(vBuffer, in, c->fWetGain, c->nDelay, count);
+                    const size_t count_up   = lsp_min(to_do_up, BUFFER_SIZE);
+                    const size_t count      = count_up / c->sOversamplerParams.nOversampling;
 
-                    // Apply 'dry' control
-                    if (c->fDryGain > 0.0f)
-                        dsp::fmadd_k3(vBuffer, in, c->fDryGain, count);
-
-                    // Compute the gain of input and output signal.
-                    in_gain                 = lsp_max(in_gain, dsp::abs_max(in, count));
-                    out_gain                = lsp_max(out_gain, dsp::abs_max(vBuffer, count));
+                    c->sPreEQ.process(vBuffer, in, count);
+                    dsp::mul_k2(vBuffer, c->sShaperParams.fPreGain, count);
+                    c->sOversampler.upsample(vBuffer, vBuffer, count);
+                    c->sShaper.process_overwrite(vBuffer, vBuffer, count_up);
+                    c->sOversampler.downsample(vBuffer, vBuffer, count);
+                    dsp::mul_k2(vBuffer, c->sShaperParams.fPostGain, count);
+                    c->sPostEQ.process(vBuffer, in, count);
 
                     // Process the
                     //  - dry (unprocessed) signal stored in 'in'
@@ -299,14 +288,6 @@ namespace lsp
                     out                    +=  count;
                     n                      +=  count;
                 }
-
-                // Update meters
-                c->pInLevel->set_value(in_gain);
-                c->pOutLevel->set_value(out_gain);
-
-                // Output the delay value in milliseconds
-                float millis = dspu::samples_to_millis(fSampleRate, c->nDelay);
-                c->pOutDelay->set_value(millis);
             }
         }
 
@@ -323,22 +304,16 @@ namespace lsp
 
                 v->begin_object(c, sizeof(channel_t));
                 {
-                    v->write_object("sLine", &c->sLine);
                     v->write_object("sBypass", &c->sBypass);
+                    v->write_object("sPreEQ", &c->sPreEQ);
+                    v->write_object("sOversampler", &c->sOversampler);
+                    v->write_object("sShaper", &c->sShaper);
+                    v->write_object("sPostEQ", &c->sPostEQ);
 
-                    v->write("nDelay", c->nDelay);
-                    v->write("fDryGain", c->fDryGain);
-                    v->write("fWetWain", c->fWetGain);
+                    // TODO: Dump the various parameters structures
 
                     v->write("pIn", c->pIn);
                     v->write("pOut", c->pOut);
-                    v->write("pDelay", c->pDelay);
-                    v->write("pDry", c->pDry);
-                    v->write("pWet", c->pWet);
-
-                    v->write("pOutDelay", c->pOutDelay);
-                    v->write("pInLevel", c->pInLevel);
-                    v->write("pOutLevel", c->pOutLevel);
                 }
                 v->end_object();
             }
@@ -347,7 +322,6 @@ namespace lsp
             v->write("vBuffer", vBuffer);
 
             v->write("pBypass", pBypass);
-            v->write("pGainOut", pGainOut);
 
             v->write("pData", pData);
         }

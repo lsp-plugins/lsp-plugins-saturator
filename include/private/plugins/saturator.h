@@ -22,8 +22,10 @@
 #ifndef PRIVATE_PLUGINS_SATURATOR_H_
 #define PRIVATE_PLUGINS_SATURATOR_H_
 
-#include <lsp-plug.in/dsp-units/util/Delay.h>
 #include <lsp-plug.in/dsp-units/ctl/Bypass.h>
+#include <lsp-plug.in/dsp-units/filters/Equalizer.h>
+#include <lsp-plug.in/dsp-units/util/Oversampler.h>
+#include <lsp-plug.in/dsp-units/shaping/Shaper.h>
 #include <lsp-plug.in/plug-fw/plug.h>
 #include <private/meta/saturator.h>
 
@@ -37,47 +39,74 @@ namespace lsp
         class saturator: public plug::Module
         {
             protected:
-                enum mode_t
+                typedef struct eq_filter_t
                 {
-                    CD_MONO,
-                    CD_STEREO,
-                    CD_X2_STEREO
-                };
+                    dspu::filter_params_t sFP;                      // Filter parameters
+                    // TODO: Add ports
+                } eq_filter_t;
+
+                typedef struct oversampler_t
+                {
+                    dspu::over_mode_t       enOverMode;             // Oversampler Mode
+                    size_t                  nOversampling;          // Oversampling Factor
+                    size_t                  nOverSampleRate;        // Oversampled Rate
+                    // TODO: Add ports
+                } oversampler_t;
+
+                typedef struct shaper_t
+                {
+                    float                   fPreGain;               // Pre Gain
+                    float                   fPostGain;              // Post Gain
+                    float                   fSlope;                 // Slope (for sinusoidal saturator)
+                    float                   fShape;                 // Shape (for many saturators)
+                    float                   fHighLevel;             // High Level (for asymmetric saturators)
+                    float                   fLowLevel;              // Low Level (for asymmetric saturators)
+                    float                   fRadius;                // Radius (for quarter circle saturator)
+                    float                   fLevels;                // Levels (for bitcrush)
+                    float                   fCCompanding;           // Continuos companding (for continuous A-law and μ-law companders)
+                    float                   fQCompanding;           // Quantized companding (for quantized A-law and μ-law companders)
+                    float                   fBias;                  // Bias (for quantized μ-law)
+                    float                   fDrive;                 // Drive (for TAP)
+                    float                   fBlend;                 // Blend (for TAP)
+                    dspu::sh_function_t     enShapingFcn;           // Shaping Function
+                    // TODO: Add ports
+                } shaper_t;
 
                 typedef struct channel_t
                 {
                     // DSP processing modules
-                    dspu::Delay         sLine;              // Delay line
-                    dspu::Bypass        sBypass;            // Bypass
+                    dspu::Bypass            sBypass;                // Bypass
+                    dspu::Equalizer         sPreEQ;                 // Pre EQ
+                    dspu::Oversampler       sOversampler;           // Oversampler
+                    dspu::Shaper            sShaper;                // Nonlinearity
+                    dspu::Equalizer         sPostEQ;                // Post EQ
 
                     // Parameters
-                    ssize_t             nDelay;             // Actual delay of the signal
-                    float               fDryGain;           // Dry gain (unprocessed signal)
-                    float               fWetGain;           // Wet gain (processed signal)
+                    eq_filter_t            *vPreEQFilters;          // Pre EQ Filters
+                    oversampler_t           sOversamplerParams;     // Oversampler Parameters
+                    shaper_t                sShaperParams;          // Shaper Parameters
+                    eq_filter_t            *vPostEQFilters;         // Post EQ Filters
 
                     // Input ports
-                    plug::IPort        *pIn;                // Input port
-                    plug::IPort        *pOut;               // Output port
-                    plug::IPort        *pDelay;             // Delay (in samples)
-                    plug::IPort        *pDry;               // Dry control
-                    plug::IPort        *pWet;               // Wet control
+                    plug::IPort            *pIn;                    // Input port
+                    plug::IPort            *pOut;                   // Output port
 
                     // Output ports
-                    plug::IPort        *pOutDelay;          // Output delay time
-                    plug::IPort        *pInLevel;           // Input signal level
-                    plug::IPort        *pOutLevel;          // Output signal level
+                    // TODO: Add ports
                 } channel_t;
 
             protected:
-                size_t              nChannels;          // Number of channels
-                channel_t          *vChannels;          // Delay channels
-                float              *vBuffer;            // Temporary buffer for audio processing
+                size_t                      nSampleRate;            // Sample rate
+                size_t                      nFilters;               // Number of filters for Pre and Post EQs of all channels.
+                size_t                      nChannels;              // Number of channels
+                channel_t                  *vChannels;              // Delay channels
+                float                      *vBuffer;                // Temporary buffer for audio processing
 
-                plug::IPort        *pBypass;            // Bypass
-                plug::IPort        *pGainOut;           // Output gain
-                plug::IPort        *pComment;           // Comment
+                plug::IPort                *pBypass;                // Bypass
+                plug::IPort                *pComment;               // Comment
+                // TODO: Add ports
 
-                uint8_t            *pData;              // Allocated data
+                uint8_t                    *pData;                  // Allocated data
 
             protected:
                 void                do_destroy();
