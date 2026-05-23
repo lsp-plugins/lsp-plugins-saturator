@@ -34,13 +34,21 @@ namespace lsp
     {
         /* The size of temporary buffer for audio processing */
         static constexpr size_t BUFFER_SIZE             = 0x200;
+        /* The FIR rank for the EQ */
+        constexpr static size_t EQ_RANK                 = 12;
 
         //---------------------------------------------------------------------
         // Plugin factory
         static const meta::plugin_t *plugins[] =
         {
-            &meta::saturator_mono,
-            &meta::saturator_stereo
+            &meta::saturator_x3_mono,
+            &meta::saturator_x3_stereo,
+            &meta::saturator_x8_mono,
+            &meta::saturator_x8_stereo,
+            &meta::saturator_x16_mono,
+            &meta::saturator_x16_stereo,
+            &meta::saturator_x32_mono,
+            &meta::saturator_x32_stereo,
         };
 
         static plug::Module *plugin_factory(const meta::plugin_t *meta)
@@ -52,18 +60,18 @@ namespace lsp
 
         //---------------------------------------------------------------------
         // Implementation
-        saturator::saturator(const meta::plugin_t *meta):
+        saturator::saturator(const meta::plugin_t *meta, size_t bands):
             Module(meta)
         {
             // Compute the number of audio channels by the number of inputs
-            nChannels       = 0;
+            nChannels = 0;
             for (const meta::port_t *p = meta->ports; p->id != NULL; ++p)
                 if (meta::is_audio_in_port(p))
                     ++nChannels;
 
             // Initialize other parameters
             nSampleRate     = 0;
-            nFilters        = 0;
+            nBands        = bands;
             vChannels       = NULL;
             vBuffer         = NULL;
 
@@ -83,23 +91,27 @@ namespace lsp
             // Call parent class for initialization
             Module::init(wrapper, ports);
 
-            // Estimate the number of bytes to allocate
+            // Calculate the number of bytes to allocate
+            size_t szof_filter_arr  = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
+            size_t szof_filters     = align_size(nChannels * 2 * szof_filter_arr, OPTIMAL_ALIGN);
             size_t szof_channels    = align_size(sizeof(channel_t) * nChannels, OPTIMAL_ALIGN);
             size_t buf_sz           = BUFFER_SIZE * sizeof(float);
-            size_t alloc            = szof_channels + buf_sz;
+            size_t alloc            = szof_channels + szof_filters + buf_sz;
 
             // Allocate memory-aligned data
             uint8_t *ptr            = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
             if (ptr == NULL)
                 return;
 
-            // Initialize pointers to channels and temporary buffer
+            // Assign all resources
             vChannels               = advance_ptr_bytes<channel_t>(ptr, szof_channels);
-            vBuffer                 = advance_ptr_bytes<float>(ptr, buf_sz);
 
             for (size_t i=0; i < nChannels; ++i)
             {
-                channel_t *c            = &vChannels[i];
+                channel_t *c = &vChannels[i];
+
+                c->vPreEQBands    = advance_ptr_bytes<eq_band_t>(ptr, szof_filter_arr);
+                c->vPostEQBands   = advance_ptr_bytes<eq_band_t>(ptr, szof_filter_arr);
 
                 // Construct in-place DSP processors
                 c->sBypass.construct();
@@ -108,15 +120,18 @@ namespace lsp
                 c->sShaper.construct();
                 c->sPostEQ.construct();
 
-                // TODO: Calls to equalizers init methods here?
+                c->sPreEQ.init(nBands, meta::saturator::FFT_RANK);
+                c->sPostEQ.init(nBands, meta::saturator::FFT_RANK);
 
                 c->pIn                  = NULL;
                 c->pOut                 = NULL;
             }
 
+            vBuffer                 = advance_ptr_bytes<float>(ptr, buf_sz);
+
             // Bind ports
             lsp_trace("Binding ports");
-            size_t port_id      = 0;
+            size_t port_id = 0;
 
             // Bind input audio ports
             for (size_t i=0; i<nChannels; ++i)
@@ -132,11 +147,13 @@ namespace lsp
             // Bind ports for audio processing channels
             for (size_t i=0; i<nChannels; ++i)
             {
-                channel_t *c            = &vChannels[i];
+                channel_t *c = &vChannels[i];
+
+                BIND_PORT();
 
                 if (i > 0)
                 {
-                    channel_t *pc           = &vChannels[0];
+                    channel_t *pc = &vChannels[0];
 
                     // TODO: Ports shared between channels go here
                 }
@@ -201,20 +218,19 @@ namespace lsp
 
         void saturator::update_sample_rate(long sr)
         {
-            if (sr == nSampleRate)
-                return;
+            nSampleRate = sr;
 
             // Update sample rate for the bypass processors
             for (size_t i=0; i<nChannels; ++i)
             {
-                channel_t *c    = &vChannels[i];
-                c->sBypass.init(sr);
-                c->sPreEQ.set_sample_rate(sr);
-                c->sShaper.set_sample_rate(sr);
-                c->sPostEQ.set_sample_rate(sr);
-            }
+                channel_t *c = &vChannels[i];
+                c->sBypass.init(nSampleRate);
+                c->sPreEQ.set_sample_rate(nSampleRate);
+                c->sShaper.set_sample_rate(nSampleRate);
+                c->sPostEQ.set_sample_rate(nSampleRate);
 
-            nSampleRate = sr;
+                c->sOversamplerParams.nOverSampleRate = nSampleRate * c->sOversamplerParams.nOversampling;
+            }
         }
 
         void saturator::update_settings()

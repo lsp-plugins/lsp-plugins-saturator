@@ -33,22 +33,123 @@ namespace lsp
     {
         typedef struct saturator
         {
-            static constexpr float  SAMPLES_MIN         = 0.0f;
-            static constexpr float  SAMPLES_MAX         = 10000.0f;
-            static constexpr float  SAMPLES_DFL         = 0.0f;
-            static constexpr float  SAMPLES_STEP        = 1.0f;
+            static constexpr float          BAND_GAIN_MIN       = GAIN_AMP_M_36_DB;
+            static constexpr float          BAND_GAIN_MAX       = GAIN_AMP_P_36_DB;
+            static constexpr float          BAND_GAIN_DFL       = GAIN_AMP_0_DB;
+            static constexpr float          BAND_GAIN_STEP      = 0.025f;
 
-            static constexpr float  TIME_MIN            = 0.0f;
-            static constexpr float  TIME_MAX            = 1000.0f;
-            static constexpr float  TIME_DFL            = 0.0f;
-            static constexpr float  TIME_STEP           = 0.01f;
+            static constexpr size_t         FFT_RANK            = 13;
 
-            static constexpr float  DELAY_OUT_MAX_TIME  = 10000.0f;
+            enum oversampler_mode_selector_t
+            {
+                SAT_OVS_NONE,
+                SAT_OVS_2X,
+                SAT_OVS_3X,
+                SAT_OVS_4X,
+                SAT_OVS_6X,
+                SAT_OVS_8X,
+
+                SAT_OVS_DFL = SAT_OVS_8X
+            };
+
+            static constexpr float          PRE_GAIN_MIN       = GAIN_AMP_M_36_DB;
+            static constexpr float          PRE_GAIN_MAX       = GAIN_AMP_P_36_DB;
+            static constexpr float          PRE_GAIN_DFL       = GAIN_AMP_0_DB;
+            static constexpr float          PRE_GAIN_STEP      = 0.025f;
+
+            static constexpr float          POST_GAIN_MIN       = GAIN_AMP_M_36_DB;
+            static constexpr float          POST_GAIN_MAX       = GAIN_AMP_P_36_DB;
+            static constexpr float          POST_GAIN_DFL       = GAIN_AMP_0_DB;
+            static constexpr float          POST_GAIN_STEP      = 0.025f;
+
+            static constexpr float          SLOPE_MIN           = 0.0f;
+            static constexpr float          SLOPE_MAX           = 1.0f;
+            static constexpr float          SLOPE_DFL           = 0.5f;
+            static constexpr float          SLOPE_STEP          = 0.001f;
+
+            static constexpr float          SHAPE_MIN           = 0.0f;
+            static constexpr float          SHAPE_MAX           = 1.0f;
+            static constexpr float          SHAPE_DFL           = 0.5f;
+            static constexpr float          SHAPE_STEP          = 0.001f;
+
+            static constexpr float          HIGH_LEVEL_MIN      = 0.0f;
+            static constexpr float          HIGH_LEVEL_MAX      = 1.0f;
+            static constexpr float          HIGH_LEVEL_DFL      = 0.5f;
+            static constexpr float          HIGH_LEVEL_STEP     = 0.001f;
+
+            static constexpr float          LOW_LEVEL_MIN       = 0.0f;
+            static constexpr float          LOW_LEVEL_MAX       = 1.0f;
+            static constexpr float          LOW_LEVEL_DFL       = 0.5f;
+            static constexpr float          LOW_LEVEL_STEP      = 0.001f;
+
+            static constexpr float          RADIUS_MIN          = 0.0f;
+            static constexpr float          RADIUS_MAX          = 1.0f;
+            static constexpr float          RADIUS_DFL          = 0.5f;
+            static constexpr float          RADIUS_STEP         = 0.001f;
+
+            static constexpr float          LEVELS_MIN          = 0.0f;
+            static constexpr float          LEVELS_MAX          = 1.0f;
+            static constexpr float          LEVELS_DFL          = 0.5f;
+            static constexpr float          LEVELS_STEP         = 0.001f;
+
+            static constexpr float          C_COMPANDING_MIN    = 0.0f;
+            static constexpr float          C_COMPANDING_MAX    = 1.0f;
+            static constexpr float          C_COMPANDING_DFL    = 0.5f;
+            static constexpr float          C_COMPANDING_STEP   = 0.001f;
+
+            static constexpr float          Q_COMPANDING_MIN    = 0.0f;
+            static constexpr float          Q_COMPANDING_MAX    = 1.0f;
+            static constexpr float          Q_COMPANDING_DFL    = 0.5f;
+            static constexpr float          Q_COMPANDING_STEP   = 0.001f;
+
+            static constexpr float          BIAS_MIN            = 0.0f;
+            static constexpr float          BIAS_MAX            = 1.0f;
+            static constexpr float          BIAS_DFL            = 0.5f;
+            static constexpr float          BIAS_STEP           = 0.001f;
+
+            static constexpr float          BLEND_MIN           = 0.0f;
+            static constexpr float          BLEND_MAX           = 1.0f;
+            static constexpr float          BLEND_DFL           = 0.5f;
+            static constexpr float          BLEND_STEP          = 0.001f;
+
+            enum shaping_function_selector_t
+            {
+                SAT_SH_FCN_SINUSOIDAL,
+                SAT_SH_FCN_POLYNOMIAL,
+                SAT_SH_FCN_HYPERBOLIC,
+                SAT_SH_FCN_EXPONENTIAL,
+                SAT_SH_FCN_POWER,
+                SAT_SH_FCN_BILINEAR,
+                SAT_SH_FCN_ASYMMETRIC_CLIP,
+                SAT_SH_FCN_ASYMMETRIC_SOFTCLIP,
+                SAT_SH_FCN_QUARTER_CIRCLE,
+                SAT_SH_FCN_RECTIFIER,
+                SAT_SH_FCN_BITCRUSH_FLOOR,
+                SAT_SH_FCN_BITCRUSH_CEIL,
+                SAT_SH_FCN_BITCRUSH_ROUND,
+                SAT_SH_FCN_CONTINUOUS_A_LAW_COMPRESSION,
+                SAT_SH_FCN_CONTINUOUS_A_LAW_EXPANSION,
+                SAT_SH_FCN_CONTINUOUS_MU_LAW_COMPRESSION,
+                SAT_SH_FCN_CONTINUOUS_MU_LAW_EXPANSION,
+                SAT_SH_FCN_QUANTIZED_A_LAW_COMPRESSION,
+                SAT_SH_FCN_QUANTIZED_A_LAW_EXPANSION,
+                SAT_SH_FCN_QUANTIZED_MU_LAW_COMPRESSION,
+                SAT_SH_FCN_QUANTIZED_MU_LAW_EXPANSION,
+                SAT_SH_FCN_TAP_TUBEWARMTH,
+
+                SAT_SH_FCN_DEFAULT = SAT_SH_FCN_HYPERBOLIC
+            };
         } saturator;
 
         // Plugin type metadata
-        extern const plugin_t saturator_mono;
-        extern const plugin_t saturator_stereo;
+        extern const meta::plugin_t saturator_x3_mono;
+        extern const meta::plugin_t saturator_x3_stereo;
+        extern const meta::plugin_t saturator_x8_mono;
+        extern const meta::plugin_t saturator_x8_stereo;
+        extern const meta::plugin_t saturator_x16_mono;
+        extern const meta::plugin_t saturator_x16_stereo;
+        extern const meta::plugin_t saturator_x32_mono;
+        extern const meta::plugin_t saturator_x32_stereo;
 
     } /* namespace meta */
 } /* namespace lsp */

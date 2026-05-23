@@ -39,18 +39,23 @@ namespace lsp
         class saturator: public plug::Module
         {
             protected:
-                typedef struct eq_filter_t
+
+                // Same as Graph Equalizer
+                typedef struct eq_band_t
                 {
-                    dspu::filter_params_t sFP;                      // Filter parameters
-                    // TODO: Add ports
-                } eq_filter_t;
+                    plug::IPort            *pGain;                  // Gain port
+                    plug::IPort            *pSolo;                  // Solo port
+                    plug::IPort            *pMute;                  // Mute port
+                    plug::IPort            *pEnable;                // Enable port
+                } eq_band_t;
 
                 typedef struct oversampler_t
                 {
                     dspu::over_mode_t       enOverMode;             // Oversampler Mode
                     size_t                  nOversampling;          // Oversampling Factor
                     size_t                  nOverSampleRate;        // Oversampled Rate
-                    // TODO: Add ports
+
+                    plug::IPort            *pMode;                  // Oversampler mode
                 } oversampler_t;
 
                 typedef struct shaper_t
@@ -69,7 +74,21 @@ namespace lsp
                     float                   fDrive;                 // Drive (for TAP)
                     float                   fBlend;                 // Blend (for TAP)
                     dspu::sh_function_t     enShapingFcn;           // Shaping Function
-                    // TODO: Add ports
+
+                    plug::IPort            *pPreGain;               // Pre Gain
+                    plug::IPort            *pPostGain;              // Post Gain
+                    plug::IPort            *pSlope;                 // Slope (for sinusoidal saturator)
+                    plug::IPort            *pShape;                 // Shape (for many saturators)
+                    plug::IPort            *pHighLevel;             // High Level (for asymmetric saturators)
+                    plug::IPort            *pLowLevel;              // Low Level (for asymmetric saturators)
+                    plug::IPort            *pRadius;                // Radius (for quarter circle saturator)
+                    plug::IPort            *pLevels;                // Levels (for bitcrush)
+                    plug::IPort            *pCCompanding;           // Continuos companding (for continuous A-law and μ-law companders)
+                    plug::IPort            *pQCompanding;           // Quantized companding (for quantized A-law and μ-law companders)
+                    plug::IPort            *pBias;                  // Bias (for quantized μ-law)
+                    plug::IPort            *pDrive;                 // Drive (for TAP)
+                    plug::IPort            *pBlend;                 // Blend (for TAP)
+                    plug::IPort            *pShapingFcn;            // Shaping Function
                 } shaper_t;
 
                 typedef struct channel_t
@@ -82,10 +101,10 @@ namespace lsp
                     dspu::Equalizer         sPostEQ;                // Post EQ
 
                     // Parameters
-                    eq_filter_t            *vPreEQFilters;          // Pre EQ Filters
+                    eq_band_t              *vPreEQBands;            // Pre EQ Bands
                     oversampler_t           sOversamplerParams;     // Oversampler Parameters
                     shaper_t                sShaperParams;          // Shaper Parameters
-                    eq_filter_t            *vPostEQFilters;         // Post EQ Filters
+                    eq_band_t              *vPostEQBands;           // Post EQ Bands
 
                     // Input ports
                     plug::IPort            *pIn;                    // Input port
@@ -97,14 +116,13 @@ namespace lsp
 
             protected:
                 size_t                      nSampleRate;            // Sample rate
-                size_t                      nFilters;               // Number of filters for Pre and Post EQs of all channels.
+                size_t                      nBands;                 // Number of bands for Pre and Post EQs of all channels.
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
                 float                      *vBuffer;                // Temporary buffer for audio processing
 
                 plug::IPort                *pBypass;                // Bypass
                 plug::IPort                *pComment;               // Comment
-                // TODO: Add ports
 
                 uint8_t                    *pData;                  // Allocated data
 
@@ -112,7 +130,7 @@ namespace lsp
                 void                do_destroy();
 
             public:
-                explicit saturator(const meta::plugin_t *meta);
+                explicit saturator(const meta::plugin_t *meta, size_t bands);
                 saturator (const saturator &) = delete;
                 saturator (saturator &&) = delete;
                 virtual ~saturator() override;

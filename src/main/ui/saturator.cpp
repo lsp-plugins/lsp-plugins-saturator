@@ -30,8 +30,14 @@ namespace lsp
         // Plugin UI factory
         static const meta::plugin_t *plugin_uis[] =
         {
-            &meta::saturator_mono,
-            &meta::saturator_stereo
+            &meta::saturator_x3_mono,
+            &meta::saturator_x3_stereo,
+            &meta::saturator_x8_mono,
+            &meta::saturator_x8_stereo,
+            &meta::saturator_x16_mono,
+            &meta::saturator_x16_stereo,
+            &meta::saturator_x32_mono,
+            &meta::saturator_x32_stereo
         };
 
         static ui::Factory factory(plugin_uis, 2);
