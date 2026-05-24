@@ -39,7 +39,6 @@ namespace lsp
         class saturator: public plug::Module
         {
             protected:
-
                 // Same as Graph Equalizer
                 typedef struct eq_band_t
                 {

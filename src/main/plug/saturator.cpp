@@ -51,9 +51,33 @@ namespace lsp
             &meta::saturator_x32_stereo,
         };
 
+        typedef struct plugin_settings_t
+        {
+            const meta::plugin_t   *metadata;
+            uint8_t                 bands;
+        } plugin_settings_t;
+
+        static const plugin_settings_t plugin_settings[] =
+        {
+            {&meta::saturator_x3_mono,      3   },
+            {&meta::saturator_x3_stereo,    3   },
+            {&meta::saturator_x8_mono,      8   },
+            {&meta::saturator_x8_stereo,    8   },
+            {&meta::saturator_x16_mono,     16  },
+            {&meta::saturator_x16_stereo,   16  },
+            {&meta::saturator_x32_mono,     32  },
+            {&meta::saturator_x32_stereo,   32  },
+
+            { NULL, 0 }
+        };
+
         static plug::Module *plugin_factory(const meta::plugin_t *meta)
         {
-            return new saturator(meta);
+            for (const plugin_settings_t *s = plugin_settings; s->metadata != NULL; ++s)
+                if (s->metadata == meta)
+                    return new saturator(s->metadata, s->bands);
+
+            return NULL;
         }
 
         static plug::Factory factory(plugin_factory, plugins, 2);
@@ -71,7 +95,7 @@ namespace lsp
 
             // Initialize other parameters
             nSampleRate     = 0;
-            nBands        = bands;
+            nBands          = bands;
             vChannels       = NULL;
             vBuffer         = NULL;
 
@@ -134,26 +158,44 @@ namespace lsp
             size_t port_id = 0;
 
             // Bind input audio ports
+            lsp_trace("Binding input audio ports");
             for (size_t i=0; i<nChannels; ++i)
                 BIND_PORT(vChannels[i].pIn);
 
             // Bind output audio ports
+            lsp_trace("Binding output audio ports");
             for (size_t i=0; i<nChannels; ++i)
                 BIND_PORT(vChannels[i].pOut);
 
-            // Bind bypass
+            // Bind common ports
+            lsp_trace("Binding common ports");
             BIND_PORT(pBypass);
 
-            // Bind ports for audio processing channels
+            // Bind saturator control ports
+            lsp_trace("Binding saturator control ports");
             for (size_t i=0; i<nChannels; ++i)
             {
                 channel_t *c = &vChannels[i];
 
-                BIND_PORT();
+                BIND_PORT(c->sOversamplerParams.pMode);
+                BIND_PORT(c->sShaperParams.pPreGain);
+                BIND_PORT(c->sShaperParams.pPostGain);
+                BIND_PORT(c->sShaperParams.pSlope);
+                BIND_PORT(c->sShaperParams.pShape);
+                BIND_PORT(c->sShaperParams.pHighLevel);
+                BIND_PORT(c->sShaperParams.pLowLevel);
+                BIND_PORT(c->sShaperParams.pRadius);
+                BIND_PORT(c->sShaperParams.pLevels);
+                BIND_PORT(c->sShaperParams.pCCompanding);
+                BIND_PORT(c->sShaperParams.pQCompanding);
+                BIND_PORT(c->sShaperParams.pBias);
+                BIND_PORT(c->sShaperParams.pDrive);
+                BIND_PORT(c->sShaperParams.pBlend);
+                BIND_PORT(c->sShaperParams.pShapingFcn);
 
                 if (i > 0)
                 {
-                    channel_t *pc = &vChannels[0];
+                    //channel_t *pc = &vChannels[0];
 
                     // TODO: Ports shared between channels go here
                 }
@@ -163,17 +205,47 @@ namespace lsp
                 }
             }
 
+            // Bind Pre-EQ ports
+            lsp_trace("Binding pre-eq filter ports");
+            for (size_t i=0; i<nBands; ++i)
+            {
+                for (size_t j=0; j<nChannels; ++j)
+                {
+                    eq_band_t *b = &vChannels[j].vPreEQBands[i];
+
+                    BIND_PORT(b->pSolo);
+                    BIND_PORT(b->pMute);
+                    BIND_PORT(b->pEnable);
+                    BIND_PORT(b->pGain);
+                }
+            }
+
+            // Bind Pre-EQ ports
+            lsp_trace("Binding post-eq filter ports");
+            for (size_t i=0; i<nBands; ++i)
+            {
+                for (size_t j=0; j<nChannels; ++j)
+                {
+                    eq_band_t *b = &vChannels[j].vPostEQBands[i];
+
+                    BIND_PORT(b->pSolo);
+                    BIND_PORT(b->pMute);
+                    BIND_PORT(b->pEnable);
+                    BIND_PORT(b->pGain);
+                }
+            }
+
             // TODO: Bind output ports.
             BIND_PORT(pComment);
 
-            // Bind output meters
+            // TODO: Bind output ports
             for (size_t i=0; i<nChannels; ++i)
             {
-                channel_t *c            = &vChannels[i];
+                //channel_t *c            = &vChannels[i];
 
                 if (i > 0)
                 {
-                    channel_t *pc           = &vChannels[0];
+                    //channel_t *pc           = &vChannels[0];
                     // TODO: Output ports shared between channels go here
                 }
                 else
