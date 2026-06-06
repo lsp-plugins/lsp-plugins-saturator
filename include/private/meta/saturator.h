@@ -112,6 +112,11 @@ namespace lsp
             static constexpr float          BLEND_DFL           = 0.5f;
             static constexpr float          BLEND_STEP          = 0.001f;
 
+            static constexpr float          DRIVE_MIN           = 0.0f;
+            static constexpr float          DRIVE_MAX           = 1.0f;
+            static constexpr float          DRIVE_DFL           = 0.5f;
+            static constexpr float          DRIVE_STEP          = 0.001f;
+
             enum shaping_function_selector_t
             {
                 SAT_SH_FCN_SINUSOIDAL,

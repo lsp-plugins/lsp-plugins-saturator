@@ -1,0 +1,29 @@
+<plugin resizable="true">
+	<grid rows="7" cols="5" spacing="4">
+	
+	<!-- Row 1 -->
+	<label text="TODO Saturator" />
+	<cell cols="4">
+		<group text="TODO Saturator" >
+			<combo id="ov" />
+			<knob id="ge" />
+			<knov id="gt" />
+			<combo id="sp" />
+			
+			<knob id="sl" visibility="(:sp ieq 0)" />
+			<knob id="sh" visibility="(:sp ieq 1) or (:sp ieq 2) or (:sp ieq 3) or (:sp ieq 4) or (:sp ieq 5) or (:sp ieq 9) "/>
+			<knob id="hl" visibility="(:sp ieq 6) or (:sp ieq 7)" />
+			<knob id="ll" visibility="(:sp ieq 6) or (:sp ieq 7)" />
+			<knob id="rd" visibility="(:sp ieq 8)" />
+			<knob id="lv" visibility="(:sp ieq 10) or (:sp ieq 11) or (:sp ieq 12)" />
+			<knob id="cp" visibility="(:sp ieq 13) or (:sp ieq 14) or (:sp ieq 15) or (:sp ieq 16)" />
+			<knob id="qp" visibility="(:sp ieq 17) or (:sp ieq 18) or (:sp ieq 19) or (:sp ieq 20)" />
+			<knob id="bs" visibility="(:sp ieq 19) or (:sp ieq 20)" />
+			<knob id="bl" visibility="(:sp ieq 21)" />
+			<knob id="dv" visibility="(:sp ieq 21)" />
+		</group>
+		
+	</cell>
+	
+	</grid>
+</plugin>

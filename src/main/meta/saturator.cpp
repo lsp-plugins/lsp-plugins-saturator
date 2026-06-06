@@ -154,6 +154,7 @@ namespace lsp
             CONTROL("qp" id, "Quantized Companding" label, "Quantized Companding" alias, U_NONE, saturator::Q_COMPANDING), \
             CONTROL("bs" id, "Bias" label, "Bias" alias, U_NONE, saturator::BIAS), \
             CONTROL("bl" id, "Blend" label, "Blend" alias, U_NONE, saturator::BLEND), \
+            CONTROL("dv" id, "Drive" label, "Drive" alias, U_NONE, saturator::DRIVE), \
             COMBO("sp" id, "Shaping Function" label, "Shaping Function" alias, saturator::SAT_SH_FCN_DEFAULT, sat_shaping_fcn)
 
         #define SATURATOR_CONTROLS_MONO     SATURATOR_CONTROLS("", "", "")
@@ -416,7 +417,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x3_mono_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -446,7 +447,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x3_stereo_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -476,7 +477,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x8_mono_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -506,7 +507,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x8_stereo_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -536,7 +537,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x16_mono_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -566,7 +567,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x16_stereo_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -596,7 +597,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x32_mono_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -626,7 +627,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x32_stereo_ports,
-            "template/plugin.xml",
+            "saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
