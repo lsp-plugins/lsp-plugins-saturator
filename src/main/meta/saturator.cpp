@@ -167,7 +167,10 @@ namespace lsp
             SWITCH("xe" id "_" #x, "Band on" label " " f, "On " f alias, 1.0f), \
             LOG_CONTROL("g" id "_" #x, "Band gain" label " " f, "Gain " f alias, U_GAIN_AMP, saturator::BAND_GAIN)
 
-        #define EQ_BAND_MONO(x, f)      EQ_BAND("", "", "", x, f)
+        #define EQ_BAND_PRE_MONO(x, f)  EQ_BAND("p", " Pre", " Pre", x, f)
+        #define EQ_BAND_POST_MONO(x, f) EQ_BAND("s", " Post", " Post", x, f)
+
+        // TODO: Make other pre and post variants
         #define EQ_BAND_STEREO(x, f)    EQ_BAND("", "", "", x, f)
         #define EQ_BAND_LR(x, f)        EQ_BAND("l", " Left", " L", x, f), EQ_BAND("r", " Right", " R", x, f)
 
@@ -249,8 +252,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_3X(EQ_BAND_MONO),
-            EQ_BANDS_3X(EQ_BAND_MONO),
+            EQ_BANDS_3X(EQ_BAND_PRE_MONO),
+            EQ_BANDS_3X(EQ_BAND_POST_MONO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -285,8 +288,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_8X(EQ_BAND_MONO),
-            EQ_BANDS_8X(EQ_BAND_MONO),
+            EQ_BANDS_8X(EQ_BAND_PRE_MONO),
+            EQ_BANDS_8X(EQ_BAND_POST_MONO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -321,8 +324,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_16X(EQ_BAND_MONO),
-            EQ_BANDS_16X(EQ_BAND_MONO),
+            EQ_BANDS_16X(EQ_BAND_PRE_MONO),
+            EQ_BANDS_16X(EQ_BAND_POST_MONO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -357,8 +360,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_32X(EQ_BAND_MONO),
-            EQ_BANDS_32X(EQ_BAND_MONO),
+            EQ_BANDS_32X(EQ_BAND_PRE_MONO),
+            EQ_BANDS_32X(EQ_BAND_POST_MONO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -417,7 +420,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x3_mono_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -447,7 +450,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x3_stereo_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -477,7 +480,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x8_mono_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -507,7 +510,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x8_stereo_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -537,7 +540,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x16_mono_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -567,7 +570,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x16_stereo_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
@@ -597,7 +600,7 @@ namespace lsp
             clap_features_mono,
             E_DUMP_STATE,
             saturator_x32_mono_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
@@ -627,7 +630,7 @@ namespace lsp
             clap_features_stereo,
             E_DUMP_STATE,
             saturator_x32_stereo_ports,
-            "saturator/plugin.xml",
+            "plugins/effects/saturator/plugin.xml",
             NULL,
             stereo_plugin_port_groups,
             &saturator_bundle
