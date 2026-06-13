@@ -141,7 +141,7 @@ namespace lsp
         };
 
         #define SATURATOR_CONTROLS(id, label, alias)  \
-            COMBO("ov" id, "Oversampler Mode" label, "Oversampler Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
+            COMBO("ov" id, "Oversampler Mode" label, "Ov. Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
             AMP_GAIN_RANGE("ge" id, "Pre gain" label, "Pre gain" alias, saturator::PRE_GAIN_DFL, saturator::PRE_GAIN_MIN, saturator::PRE_GAIN_MAX), \
             AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX), \
             CONTROL("sl" id, "Slope" label, "Slope" alias, U_NONE, saturator::SLOPE), \
@@ -150,12 +150,12 @@ namespace lsp
             CONTROL("ll" id, "Low Level" label, "Low Level" alias, U_NONE, saturator::LOW_LEVEL), \
             CONTROL("rd" id, "Radius" label, "Radius" alias, U_NONE, saturator::RADIUS), \
             CONTROL("lv" id, "Levels" label, "Levels" alias, U_NONE, saturator::LEVELS), \
-            CONTROL("cp" id, "Continuous Companding" label, "Continuous Companding" alias, U_NONE, saturator::C_COMPANDING), \
-            CONTROL("qp" id, "Quantized Companding" label, "Quantized Companding" alias, U_NONE, saturator::Q_COMPANDING), \
+            CONTROL("cp" id, "Continuous Companding" label, "Cont. Comp." alias, U_NONE, saturator::C_COMPANDING), \
+            CONTROL("qp" id, "Quantized Companding" label, "Quant. Comp." alias, U_NONE, saturator::Q_COMPANDING), \
             CONTROL("bs" id, "Bias" label, "Bias" alias, U_NONE, saturator::BIAS), \
             CONTROL("bl" id, "Blend" label, "Blend" alias, U_NONE, saturator::BLEND), \
             CONTROL("dv" id, "Drive" label, "Drive" alias, U_NONE, saturator::DRIVE), \
-            COMBO("sp" id, "Shaping Function" label, "Shaping Function" alias, saturator::SAT_SH_FCN_DEFAULT, sat_shaping_fcn)
+            COMBO("sp" id, "Shaping Function" label, "Shaping Fun." alias, saturator::SAT_SH_FCN_DEFAULT, sat_shaping_fcn)
 
         #define SATURATOR_CONTROLS_MONO     SATURATOR_CONTROLS("", "", "")
         #define SATURATOR_CONTROLS_STEREO   SATURATOR_CONTROLS("", "", "")
@@ -170,8 +170,10 @@ namespace lsp
         #define EQ_BAND_PRE_MONO(x, f)  EQ_BAND("p", " Pre", " Pre", x, f)
         #define EQ_BAND_POST_MONO(x, f) EQ_BAND("s", " Post", " Post", x, f)
 
+        #define EQ_BAND_PRE_STEREO(x, f)    EQ_BAND("p", "Pre", "Pre", x, f)
+        #define EQ_BAND_POST_STEREO(x, f)   EQ_BAND("s", "Post", "Post", x, f)
+
         // TODO: Make other pre and post variants
-        #define EQ_BAND_STEREO(x, f)    EQ_BAND("", "", "", x, f)
         #define EQ_BAND_LR(x, f)        EQ_BAND("l", " Left", " L", x, f), EQ_BAND("r", " Right", " R", x, f)
 
         #define EQ_BANDS_3X(band) \
@@ -270,8 +272,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_3X(EQ_BAND_STEREO),
-            EQ_BANDS_3X(EQ_BAND_STEREO),
+            EQ_BANDS_3X(EQ_BAND_PRE_STEREO),
+            EQ_BANDS_3X(EQ_BAND_POST_STEREO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -306,8 +308,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_8X(EQ_BAND_STEREO),
-            EQ_BANDS_8X(EQ_BAND_STEREO),
+            EQ_BANDS_8X(EQ_BAND_PRE_STEREO),
+            EQ_BANDS_8X(EQ_BAND_POST_STEREO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -342,8 +344,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_16X(EQ_BAND_STEREO),
-            EQ_BANDS_16X(EQ_BAND_STEREO),
+            EQ_BANDS_16X(EQ_BAND_PRE_STEREO),
+            EQ_BANDS_16X(EQ_BAND_POST_STEREO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -378,8 +380,8 @@ namespace lsp
             // Input controls
             BYPASS,
             SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_32X(EQ_BAND_STEREO),
-            EQ_BANDS_32X(EQ_BAND_STEREO),
+            EQ_BANDS_32X(EQ_BAND_PRE_STEREO),
+            EQ_BANDS_32X(EQ_BAND_POST_STEREO),
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
