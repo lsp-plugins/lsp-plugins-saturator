@@ -39,6 +39,43 @@ namespace lsp
         class saturator: public plug::Module
         {
             protected:
+                enum ch_update_t
+                {
+                    UPD_PRE_EQ          = 1 << 0,
+                    UPD_OVERSAMPLER     = 1 << 1,
+                    UPD_SHAPER          = 1 << 2,
+                    UPD_POST_EQ         = 1 << 3,
+                };
+
+                typedef struct ch_state_stage_t
+                {
+                    float  *vfPV_pre_eq_pGain;
+                    float  *vfPV_pre_eq_pSolo;
+                    float  *vfPV_pre_eq_pMute;
+                    float  *vfPV_pre_eq_pEnable;
+
+                    size_t  nPV_ovs_pMode;
+
+                    float   fPV_shaper_pPreGain;
+                    float   fPV_shaper_pPostGain;
+                    float   fPV_shaper_pSlope;
+                    float   fPV_shaper_pShape;
+                    float   fPV_shaper_pHighLevel;
+                    float   fPV_shaper_pLowLevel;
+                    float   fPV_shaper_pRadius;
+                    float   fPV_shaper_pLevels;
+                    float   fPV_shaper_pCCompanding;
+                    float   fPV_shaper_pQCompanding;
+                    float   fPV_shaper_pBias;
+                    float   fPV_shaper_pBlend;
+                    size_t  nPV_shaper_pShapingFcn;
+
+                    float  *vfPV_post_eq_pGain;
+                    float  *vfPV_post_eq_pSolo;
+                    float  *vfPV_post_eq_pMute;
+                    float  *vfPV_post_eq_pEnable;
+                } ch_state_stage_t;
+
                 // Same as Graph Equalizer
                 typedef struct eq_band_t
                 {
@@ -92,6 +129,9 @@ namespace lsp
 
                 typedef struct channel_t
                 {
+                    size_t                  nUpdate;
+                    ch_state_stage_t        sStateStage;
+
                     // DSP processing modules
                     dspu::Bypass            sBypass;                // Bypass
                     dspu::Equalizer         sPreEQ;                 // Pre EQ
@@ -127,6 +167,14 @@ namespace lsp
 
             protected:
                 void                do_destroy();
+
+            protected:
+                static dspu::over_mode_t    get_oversampler_mode(size_t portValue);
+                static dspu::sh_function_t  get_shaping_function(size_t portValue);
+
+            protected:
+                void                init_state_stage(channel_t *c);
+                void                commit_staged_state_change(channel_t *c);
 
             public:
                 explicit saturator(const meta::plugin_t *meta, size_t bands);
