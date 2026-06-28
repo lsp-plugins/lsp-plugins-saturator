@@ -176,10 +176,16 @@ namespace lsp
         // TODO: Make other pre and post variants
         #define EQ_BAND_LR(x, f)        EQ_BAND("l", " Left", " L", x, f), EQ_BAND("r", " Right", " R", x, f)
 
+        const float saturator::band_frequencies_x3[] = {125.0f, 1000.0f, 18000.0f};
+
         #define EQ_BANDS_3X(band) \
             band(0, "125"), \
             band(1, "1K"), \
             band(2, "18K")
+
+        const float saturator::band_frequencies_x8[] = {
+                31.5f, 63.0f, 125.0f, 250.0f, 500.0f, 1000.0f, 4000.0f, 8000.0f,
+        };
 
         // Octave bands, except the first and the last https://en.wikipedia.org/wiki/Octave_band#Octave_bands.
         #define EQ_BANDS_8X(band) \
@@ -191,6 +197,12 @@ namespace lsp
             band(5, "1K"), \
             band(6, "4K"), \
             band(7, "8K")
+
+        const float saturator::band_frequencies_x16[] = {
+                16.0f, 25.0f, 40.0f, 63.0f, 100.0f, 160.0f, 250.0f, 400.0f,
+                630.0f, 1000.0f, 1600.0f, 2500.0f, 4000.0f, 6300.0f, 10000.0f,
+                16000.0f,
+        };
 
         #define EQ_BANDS_16X(band) \
             band(0, "16"), \
@@ -209,6 +221,13 @@ namespace lsp
             band(13, "6.3K"), \
             band(14, "10K"), \
             band(15, "16K")
+
+        const float saturator::band_frequencies_x32[] = {
+                16.0f, 20.0f, 23.0f, 31.5f, 40.0f, 50.0f, 63.0f, 80.0f,
+                100.0f, 125.0f, 160.0f, 200.0f, 250.0f, 315.0f, 400.0f, 500.0f,
+                630.0f, 800.0f, 1000.0f, 1250.0f, 1600.0f, 2000.0f, 2500.0f, 3150.0f,
+                4000.0f, 5000.0f, 6300.0f, 8000.0f, 10000.0f, 12500.0f, 16000.0f, 20000.0f,
+        };
 
         // Third octave bands: https://en.wikipedia.org/wiki/Octave_band#One-third_octave_bands
         #define EQ_BANDS_32X(band) \

@@ -67,6 +67,7 @@ namespace lsp
                     float   fPV_shaper_pCCompanding;
                     float   fPV_shaper_pQCompanding;
                     float   fPV_shaper_pBias;
+                    float   fPV_shaper_pDrive;
                     float   fPV_shaper_pBlend;
                     size_t  nPV_shaper_pShapingFcn;
 
@@ -79,6 +80,9 @@ namespace lsp
                 // Same as Graph Equalizer
                 typedef struct eq_band_t
                 {
+                    dspu::filter_params_t sOldFP;                   // Old filter parameters
+                    dspu::filter_params_t sFP;                      // Filter parameters
+
                     plug::IPort            *pGain;                  // Gain port
                     plug::IPort            *pSolo;                  // Solo port
                     plug::IPort            *pMute;                  // Mute port
@@ -145,6 +149,12 @@ namespace lsp
                     shaper_t                sShaperParams;          // Shaper Parameters
                     eq_band_t              *vPostEQBands;           // Post EQ Bands
 
+                    bool                    bPreHasSolo;            // Whether the Pre EQ has solo.
+                    size_t                  nPreSoloBand;           // The solo band number for the Pre EQ.
+
+                    bool                    bPostHasSolo;           // Whether the Post EQ has solo.
+                    size_t                  nPostSoloBand;          // The solo band number for the Post EQ.
+
                     // Input ports
                     plug::IPort            *pIn;                    // Input port
                     plug::IPort            *pOut;                   // Output port
@@ -163,6 +173,8 @@ namespace lsp
                 plug::IPort                *pBypass;                // Bypass
                 plug::IPort                *pComment;               // Comment
 
+                const float                *vFreqs;                 // Pointer to the Frequency vector in metadata, a constant.
+
                 uint8_t                    *pData;                  // Allocated data
 
             protected:
@@ -174,10 +186,11 @@ namespace lsp
 
             protected:
                 void                init_state_stage(channel_t *c);
+                void                setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
                 void                commit_staged_state_change(channel_t *c);
 
             public:
-                explicit saturator(const meta::plugin_t *meta, size_t bands);
+                explicit saturator(const meta::plugin_t *meta, size_t bands, const float *vfreqs);
                 saturator (const saturator &) = delete;
                 saturator (saturator &&) = delete;
                 virtual ~saturator() override;

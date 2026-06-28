@@ -55,18 +55,19 @@ namespace lsp
         {
             const meta::plugin_t   *metadata;
             uint8_t                 bands;
+            const float            *frequencies;
         } plugin_settings_t;
 
         static const plugin_settings_t plugin_settings[] =
         {
-            {&meta::saturator_x3_mono,      3   },
-            {&meta::saturator_x3_stereo,    3   },
-            {&meta::saturator_x8_mono,      8   },
-            {&meta::saturator_x8_stereo,    8   },
-            {&meta::saturator_x16_mono,     16  },
-            {&meta::saturator_x16_stereo,   16  },
-            {&meta::saturator_x32_mono,     32  },
-            {&meta::saturator_x32_stereo,   32  },
+            {&meta::saturator_x3_mono,      3,  meta::saturator::band_frequencies_x3   },
+            {&meta::saturator_x3_stereo,    3,  meta::saturator::band_frequencies_x3   },
+            {&meta::saturator_x8_mono,      8,  meta::saturator::band_frequencies_x8   },
+            {&meta::saturator_x8_stereo,    8,  meta::saturator::band_frequencies_x8   },
+            {&meta::saturator_x16_mono,     16, meta::saturator::band_frequencies_x16  },
+            {&meta::saturator_x16_stereo,   16, meta::saturator::band_frequencies_x16  },
+            {&meta::saturator_x32_mono,     32, meta::saturator::band_frequencies_x32  },
+            {&meta::saturator_x32_stereo,   32, meta::saturator::band_frequencies_x32  },
 
             { NULL, 0 }
         };
@@ -75,7 +76,7 @@ namespace lsp
         {
             for (const plugin_settings_t *s = plugin_settings; s->metadata != NULL; ++s)
                 if (s->metadata == meta)
-                    return new saturator(s->metadata, s->bands);
+                    return new saturator(s->metadata, s->bands, s->frequencies);
 
             return NULL;
         }
@@ -84,7 +85,7 @@ namespace lsp
 
         //---------------------------------------------------------------------
         // Implementation
-        saturator::saturator(const meta::plugin_t *meta, size_t bands):
+        saturator::saturator(const meta::plugin_t *meta, size_t bands, const float *vfreqs):
             Module(meta)
         {
             // Compute the number of audio channels by the number of inputs
@@ -101,6 +102,8 @@ namespace lsp
 
             pBypass         = NULL;
             pComment        = NULL;
+
+            vFreqs          = vfreqs;
 
             pData           = NULL;
         }
@@ -425,8 +428,13 @@ namespace lsp
                 c->sStateStage.vfPV_pre_eq_pSolo[b]     = 0.0f; // TODO: Should we put something in meta for this?
                 c->sStateStage.vfPV_pre_eq_pMute[b]     = 0.0f; // TODO: Should we put something in meta for this?
                 c->sStateStage.vfPV_pre_eq_pEnable[b]   = 0.0f; // TODO: Should we put something in meta for this?
+
+                c->sStateStage.vfPV_post_eq_pGain[b]    = meta::saturator::BAND_GAIN_DFL;
+                c->sStateStage.vfPV_post_eq_pSolo[b]    = 0.0f; // TODO: Should we put something in meta for this?
+                c->sStateStage.vfPV_post_eq_pMute[b]    = 0.0f; // TODO: Should we put something in meta for this?
+                c->sStateStage.vfPV_post_eq_pEnable[b]  = 0.0f; // TODO: Should we put something in meta for this?
             }
-            c->nUpdate |= UPD_PRE_EQ;
+            c->nUpdate |= UPD_PRE_EQ | UPD_POST_EQ;
 
             c->sStateStage.nPV_ovs_pMode = meta::saturator::SAT_OVS_DFL;
             c->nUpdate |= UPD_OVERSAMPLER;
@@ -442,18 +450,57 @@ namespace lsp
             c->sStateStage.fPV_shaper_pCCompanding  = meta::saturator::C_COMPANDING_DFL;
             c->sStateStage.fPV_shaper_pQCompanding  = meta::saturator::Q_COMPANDING_DFL;
             c->sStateStage.fPV_shaper_pBias         = meta::saturator::BIAS_DFL;
+            c->sStateStage.fPV_shaper_pDrive        = meta::saturator::DRIVE_DFL;
             c->sStateStage.fPV_shaper_pBlend        = meta::saturator::BLEND_DFL;
             c->sStateStage.nPV_shaper_pShapingFcn   = meta::saturator::SAT_SH_FCN_DEFAULT;
             c->nUpdate |= UPD_SHAPER;
 
-            for (size_t b=0; b<nBands; ++b)
+        }
+
+        void saturator::setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band)
+        {
+            // TODO: As we add more settings for the filter bands we will need to to change this,
+
+            fp->nSlope      = 1;
+            fp->fQuality    = 0.0f;
+            fp->fGain       = gain;
+
+            if (band == 0)
             {
-                c->sStateStage.vfPV_post_eq_pGain[b]    = meta::saturator::BAND_GAIN_DFL;
-                c->sStateStage.vfPV_post_eq_pSolo[b]    = 0.0f; // TODO: Should we put something in meta for this?
-                c->sStateStage.vfPV_post_eq_pMute[b]    = 0.0f; // TODO: Should we put something in meta for this?
-                c->sStateStage.vfPV_post_eq_pEnable[b]  = 0.0f; // TODO: Should we put something in meta for this?
+                fp->nType   = dspu::FLT_DR_APO_LOPASS;
+                fp->fFreq   = sqrtf(vFreqs[0] * vFreqs[1]);
+                fp->fFreq2  = fp->fFreq;
             }
-            c->nUpdate |= UPD_POST_EQ;
+            else if (band == (nBands - 1))
+            {
+                fp->nType   = dspu::FLT_DR_APO_HIPASS;
+                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
+                fp->fFreq2  = fp->fFreq;
+            }
+            else
+            {
+                fp->nType   = dspu::FLT_DR_APO_BANDPASS;
+                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
+                fp->fFreq2  = sqrtf(vFreqs[band] * vFreqs[band+1]);
+            }
+
+            if (has_solo && (band != solo_band))
+            {
+                fp->nType   = dspu::FLT_NONE;
+                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+            }
+
+            if (mute >= 0.5f)
+            {
+                fp->nType   = dspu::FLT_NONE;
+                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+            }
+
+            if (enable < 0.5f)
+            {
+                fp->nType   = dspu::FLT_NONE;
+                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+            }
         }
 
         void saturator::commit_staged_state_change(channel_t *c)
@@ -461,7 +508,105 @@ namespace lsp
             if (c->nUpdate == 0)
                 return;
 
-            // TODO: Implement commit actions
+
+            for (size_t b=0; b<nBands; ++b)
+            {
+                // TODO: This will update all filters even if only one has changed...
+                // are there better ways?
+                if (c->nUpdate & UPD_PRE_EQ)
+                {
+                    eq_band_t *pre_f                = &c->vPreEQBands[b];
+                    pre_f->sOldFP                   = pre_f->sFP;
+                    dspu::filter_params_t *pre_fp   = &pre_f->sFP;
+//                    dspu::filter_params_t *pre_op   = &pre_f->sOldFP;
+
+                    setup_eq_filter(
+                            pre_fp,
+                            b,
+                            c->sStateStage.vfPV_pre_eq_pGain[b],
+                            c->sStateStage.vfPV_pre_eq_pMute[b],
+                            c->sStateStage.vfPV_pre_eq_pEnable[b],
+                            c->bPreHasSolo,
+                            c->nPreSoloBand
+                    );
+
+                    c->sPreEQ.set_params(b, pre_fp);
+                }
+
+                if (c->nUpdate & UPD_POST_EQ)
+                {
+                    eq_band_t *post_f               = &c->vPostEQBands[b];
+                    post_f->sOldFP                  = post_f->sFP;
+                    dspu::filter_params_t *post_fp  = &post_f->sFP;
+ //                   dspu::filter_params_t *pre_op   = &pre_f->sOldFP;
+
+                    setup_eq_filter(
+                            post_fp,
+                            b,
+                            c->sStateStage.vfPV_post_eq_pGain[b],
+                            c->sStateStage.vfPV_post_eq_pMute[b],
+                            c->sStateStage.vfPV_post_eq_pEnable[b],
+                            c->bPostHasSolo,
+                            c->nPostSoloBand
+                    );
+
+                    c->sPostEQ.set_params(b, post_fp);
+                }
+            }
+
+            if (c->nUpdate & UPD_OVERSAMPLER)
+            {
+                c->sOversamplerParams.enOverMode = get_oversampler_mode(c->sStateStage.nPV_ovs_pMode);
+
+                c->sOversampler.set_mode(c->sOversamplerParams.enOverMode);
+                if (c->sOversampler.modified())
+                    c->sOversampler.update_settings();
+
+                c->sOversamplerParams.nOversampling     = c->sOversampler.get_oversampling();
+                c->sOversamplerParams.nOverSampleRate   = nSampleRate * c->sOversamplerParams.nOversampling ;
+            }
+
+            if (c->nUpdate & UPD_SHAPER)
+            {
+                c->sShaperParams.fPreGain = c->sStateStage.fPV_shaper_pPreGain;
+                c->sShaperParams.fPostGain = c->sStateStage.fPV_shaper_pPostGain;
+
+                c->sShaperParams.fSlope = c->sStateStage.fPV_shaper_pSlope;
+                c->sShaper.set_slope(c->sShaperParams.fSlope);
+
+                c->sShaperParams.fShape = c->sStateStage.fPV_shaper_pShape;
+                c->sShaper.set_shape(c->sShaperParams.fShape);
+
+                c->sShaperParams.fHighLevel = c->sStateStage.fPV_shaper_pHighLevel;
+                c->sShaper.set_high_level(c->sShaperParams.fHighLevel);
+
+                c->sShaperParams.fLowLevel = c->sStateStage.fPV_shaper_pLowLevel;
+                c->sShaper.set_low_level(c->sShaperParams.fLowLevel);
+
+                c->sShaperParams.fRadius = c->sStateStage.fPV_shaper_pRadius;
+                c->sShaper.set_radius(c->sShaperParams.fRadius);
+
+                c->sShaperParams.fLevels = c->sStateStage.fPV_shaper_pLevels;
+                c->sShaper.set_levels(c->sShaperParams.fLevels);
+
+                c->sShaperParams.fCCompanding = c->sStateStage.fPV_shaper_pCCompanding;
+                c->sShaper.set_continuous_companding(c->sShaperParams.fCCompanding);
+
+                c->sShaperParams.fQCompanding = c->sStateStage.fPV_shaper_pQCompanding;
+                c->sShaper.set_quantized_companding(c->sShaperParams.fQCompanding);
+
+                c->sShaperParams.fBias = c->sStateStage.fPV_shaper_pBias;
+                c->sShaper.set_bias(c->sShaperParams.fBias);
+
+                c->sShaperParams.fDrive = c->sStateStage.fPV_shaper_pDrive;
+                c->sShaper.set_drive(c->sShaperParams.fDrive);
+
+                c->sShaperParams.fBlend = c->sStateStage.fPV_shaper_pBlend;
+                c->sShaper.set_blend(c->sShaperParams.fBlend);
+
+                c->sShaperParams.enShapingFcn = get_shaping_function(c->sStateStage.nPV_shaper_pShapingFcn);
+                c->sShaper.set_function(c->sShaperParams.enShapingFcn);
+            }
 
             c->nUpdate = 0;
         }
@@ -476,30 +621,69 @@ namespace lsp
 
                 c->sBypass.set_bypass(bypass);
 
+                c->bPreHasSolo      = false;
+                c->bPostHasSolo     = false;
+
                 for (size_t b=0; b < nBands; ++b)
                 {
-                    float gain = c->vPreEQBands[b].pGain->value();
-                    if (gain != c->sStateStage.vfPV_pre_eq_pGain[b]) {
-                        c->sStateStage.vfPV_pre_eq_pGain[b] = gain;
+                    float pre_gain = c->vPreEQBands[b].pGain->value();
+                    if (pre_gain != c->sStateStage.vfPV_pre_eq_pGain[b]) {
+                        c->sStateStage.vfPV_pre_eq_pGain[b] = pre_gain;
                         c->nUpdate |= UPD_PRE_EQ;
                     }
 
-                    float solo = c->vPreEQBands[b].pSolo->value();
-                    if (solo != c->sStateStage.vfPV_pre_eq_pSolo[b]) {
-                        c->sStateStage.vfPV_pre_eq_pSolo[b] = solo;
+                    float pre_solo = c->vPreEQBands[b].pSolo->value();
+                    if (pre_solo != c->sStateStage.vfPV_pre_eq_pSolo[b]) {
+                        c->sStateStage.vfPV_pre_eq_pSolo[b] = pre_solo;
                         c->nUpdate |= UPD_PRE_EQ;
                     }
 
-                    float mute = c->vPreEQBands[b].pMute->value();
-                    if (mute != c->sStateStage.vfPV_pre_eq_pMute[b]) {
-                        c->sStateStage.vfPV_pre_eq_pMute[b] = mute;
+                    if (pre_solo >= 0.5f)
+                    {
+                        c->bPreHasSolo  = true;
+                        c->nPreSoloBand = b;
+                    }
+
+                    float pre_mute = c->vPreEQBands[b].pMute->value();
+                    if (pre_mute != c->sStateStage.vfPV_pre_eq_pMute[b]) {
+                        c->sStateStage.vfPV_pre_eq_pMute[b] = pre_mute;
                         c->nUpdate |= UPD_PRE_EQ;
                     }
 
-                    float enable = c->vPreEQBands[b].pEnable->value();
-                    if (enable != c->sStateStage.vfPV_pre_eq_pEnable[b]) {
-                        c->sStateStage.vfPV_pre_eq_pEnable[b] = enable;
+                    float pre_enable = c->vPreEQBands[b].pEnable->value();
+                    if (pre_enable != c->sStateStage.vfPV_pre_eq_pEnable[b]) {
+                        c->sStateStage.vfPV_pre_eq_pEnable[b] = pre_enable;
                         c->nUpdate |= UPD_PRE_EQ;
+                    }
+
+                    float post_gain = c->vPostEQBands[b].pGain->value();
+                    if (post_gain != c->sStateStage.vfPV_post_eq_pGain[b]) {
+                        c->sStateStage.vfPV_post_eq_pGain[b] = post_gain;
+                        c->nUpdate |= UPD_POST_EQ;
+                    }
+
+                    float post_solo = c->vPostEQBands[b].pSolo->value();
+                    if (post_solo != c->sStateStage.vfPV_post_eq_pSolo[b]) {
+                        c->sStateStage.vfPV_post_eq_pSolo[b] = post_solo;
+                        c->nUpdate |= UPD_POST_EQ;
+                    }
+
+                    if (post_solo >= 0.5f)
+                    {
+                        c->bPostHasSolo  = true;
+                        c->nPostSoloBand = b;
+                    }
+
+                    float post_mute = c->vPostEQBands[b].pMute->value();
+                    if (post_mute != c->sStateStage.vfPV_post_eq_pMute[b]) {
+                        c->sStateStage.vfPV_post_eq_pMute[b] = post_mute;
+                        c->nUpdate |= UPD_POST_EQ;
+                    }
+
+                    float post_enable = c->vPostEQBands[b].pEnable->value();
+                    if (post_enable != c->sStateStage.vfPV_post_eq_pEnable[b]) {
+                        c->sStateStage.vfPV_post_eq_pEnable[b] = post_enable;
+                        c->nUpdate |= UPD_POST_EQ;
                     }
                 }
 
@@ -587,6 +771,13 @@ namespace lsp
                     c->nUpdate |= UPD_SHAPER;
                 }
 
+                float drive = c->sShaperParams.pDrive->value();
+                if (drive != c->sStateStage.fPV_shaper_pDrive)
+                {
+                    c->sStateStage.fPV_shaper_pDrive = drive;
+                    c->nUpdate |= UPD_SHAPER;
+                }
+
                 float blend = c->sShaperParams.pBlend->value();
                 if (blend != c->sStateStage.fPV_shaper_pBlend)
                 {
@@ -599,33 +790,6 @@ namespace lsp
                 {
                     c->sStateStage.nPV_shaper_pShapingFcn = shaping;
                     c->nUpdate |= UPD_SHAPER;
-                }
-
-                for (size_t b=0; b < nBands; ++b)
-                {
-                    float gain = c->vPostEQBands[b].pGain->value();
-                    if (gain != c->sStateStage.vfPV_post_eq_pGain[b]) {
-                        c->sStateStage.vfPV_post_eq_pGain[b] = gain;
-                        c->nUpdate |= UPD_POST_EQ;
-                    }
-
-                    float solo = c->vPostEQBands[b].pSolo->value();
-                    if (solo != c->sStateStage.vfPV_post_eq_pSolo[b]) {
-                        c->sStateStage.vfPV_post_eq_pSolo[b] = solo;
-                        c->nUpdate |= UPD_POST_EQ;
-                    }
-
-                    float mute = c->vPostEQBands[b].pMute->value();
-                    if (mute != c->sStateStage.vfPV_post_eq_pMute[b]) {
-                        c->sStateStage.vfPV_post_eq_pMute[b] = mute;
-                        c->nUpdate |= UPD_POST_EQ;
-                    }
-
-                    float enable = c->vPostEQBands[b].pEnable->value();
-                    if (enable != c->sStateStage.vfPV_post_eq_pEnable[b]) {
-                        c->sStateStage.vfPV_post_eq_pEnable[b] = enable;
-                        c->nUpdate |= UPD_POST_EQ;
-                    }
                 }
             }
 

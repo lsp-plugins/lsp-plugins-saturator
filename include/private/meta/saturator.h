@@ -144,6 +144,12 @@ namespace lsp
 
                 SAT_SH_FCN_DEFAULT = SAT_SH_FCN_HYPERBOLIC
             };
+
+            static const float band_frequencies_x3[];
+            static const float band_frequencies_x8[];
+            static const float band_frequencies_x16[];
+            static const float band_frequencies_x32[];
+
         } saturator;
 
         // Plugin type metadata
