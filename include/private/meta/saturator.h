@@ -49,7 +49,8 @@ namespace lsp
                 SAT_OVS_6X,
                 SAT_OVS_8X,
 
-                SAT_OVS_DFL = SAT_OVS_8X
+                SAT_OVS_DFL     = SAT_OVS_8X,
+                SAT_OVS_MAX     = SAT_OVS_8X
             };
 
             static constexpr float          PRE_GAIN_MIN       = GAIN_AMP_M_36_DB;

@@ -454,7 +454,7 @@ namespace lsp
             "Saturator x3 Stereo",
             "ST3S",
             &developers::s_tronci,
-            "saturator_stereo",
+            "saturator_x3_stereo",
             {
                 LSP_LV2_URI("saturator_x3_stereo"),
                 LSP_LV2UI_URI("saturator_x3_stereo"),
@@ -514,7 +514,7 @@ namespace lsp
             "Saturator x8 Stereo",
             "ST3S",
             &developers::s_tronci,
-            "saturator_stereo",
+            "saturator_x8_stereo",
             {
                 LSP_LV2_URI("saturator_x8_stereo"),
                 LSP_LV2UI_URI("saturator_x8_stereo"),
@@ -574,7 +574,7 @@ namespace lsp
             "Saturator x16 Stereo",
             "ST16S",
             &developers::s_tronci,
-            "saturator_stereo",
+            "saturator_x16_stereo",
             {
                 LSP_LV2_URI("saturator_x16_stereo"),
                 LSP_LV2UI_URI("saturator_x16_stereo"),
@@ -634,7 +634,7 @@ namespace lsp
             "Saturator x32 Stereo",
             "ST16S",
             &developers::s_tronci,
-            "saturator_stereo",
+            "saturator_x32_stereo",
             {
                 LSP_LV2_URI("saturator_x32_stereo"),
                 LSP_LV2UI_URI("saturator_x32_stereo"),

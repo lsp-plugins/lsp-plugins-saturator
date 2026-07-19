@@ -169,6 +169,7 @@ namespace lsp
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
                 float                      *vBuffer;                // Temporary buffer for audio processing
+                float                      *vOSBuffer;              // Temporary buffer for oversampled audio processing
 
                 plug::IPort                *pBypass;                // Bypass
                 plug::IPort                *pComment;               // Comment

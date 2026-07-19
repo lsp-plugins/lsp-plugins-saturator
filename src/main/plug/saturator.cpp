@@ -34,8 +34,6 @@ namespace lsp
     {
         /* The size of temporary buffer for audio processing */
         static constexpr size_t BUFFER_SIZE             = 0x200;
-        /* The FIR rank for the EQ */
-        constexpr static size_t EQ_RANK                 = 12;
 
         //---------------------------------------------------------------------
         // Plugin factory
@@ -99,6 +97,7 @@ namespace lsp
             nBands          = bands;
             vChannels       = NULL;
             vBuffer         = NULL;
+            vOSBuffer       = NULL;
 
             pBypass         = NULL;
             pComment        = NULL;
@@ -120,13 +119,12 @@ namespace lsp
 
             // Calculate the number of bytes to allocate
             // A single filter array is an array of nBands `eq_band_t` objects:
-            size_t szof_filter_arr      = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
-            // We have 2 filter arrays per channels (pre end post):
-            size_t szof_filters         = align_size(nChannels * 2 * szof_filter_arr, OPTIMAL_ALIGN);
+            const size_t szof_eq_bands  = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
             // We have nChannels `channel_t` objects:
-            size_t szof_channels        = align_size(sizeof(channel_t) * nChannels, OPTIMAL_ALIGN);
+            const size_t szof_channels  = align_size(sizeof(channel_t) * nChannels, OPTIMAL_ALIGN);
             // We have 1x audio buffer for processing:
-            size_t szof_buf             = BUFFER_SIZE * sizeof(float);
+            const size_t szof_buf       = BUFFER_SIZE * sizeof(float);
+            const size_t szof_osbuf     = szof_buf * meta::saturator::SAT_OVS_MAX;
             /** Each `ch_state_stage_t` object has:
              * 1x vfPV_pre_eq_pGain vector of nBands float
              * 1x vfPV_pre_eq_pSolo vector of nBands float
@@ -140,41 +138,46 @@ namespace lsp
              * So, 8 arrays of nBands floats per `ch_state_stage_t` object.
              * We have a `ch_state_stage_t` object per channel. So:
              */
-            size_t szof_stage_array     = nBands * sizeof(float);
-            size_t szof_stage_arrays    = 8 * nChannels * szof_stage_array;
+            const size_t szof_stage_array   = nBands * sizeof(float);
+
             // In total:
-            size_t alloc                = szof_channels + szof_filters + szof_buf + szof_stage_arrays;
+            const size_t alloc          =
+                szof_channels +         // vChannels
+                nChannels * (
+                    szof_eq_bands*2 +               // vPreEQBands + vPostEQBands
+                    8 * szof_stage_array            // channel_t::sStateStage buffers
+                ) +
+                szof_buf +              // vBuffer
+                szof_osbuf;             // vOSBuffer
 
             // Allocate memory-aligned data
-            uint8_t *ptr            = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
+            uint8_t *ptr                = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
             if (ptr == NULL)
                 return;
+            lsp_guard_assert(uint8_t * const save = ptr);
 
             // Assign all resources
-            vChannels               = advance_ptr_bytes<channel_t>(ptr, szof_channels);
+            vChannels                   = advance_ptr_bytes<channel_t>(ptr, szof_channels);
 
             for (size_t i=0; i < nChannels; ++i)
             {
                 channel_t *c = &vChannels[i];
 
-                for (size_t b=0; b < nBands; ++ b)
-                {
-                    c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_pre_eq_pMute        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_pre_eq_pEnable      = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_pre_eq_pMute        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_pre_eq_pEnable      = advance_ptr_bytes<float>(ptr, szof_stage_array);
 
-                    c->sStateStage.vfPV_post_eq_pGain       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_post_eq_pSolo       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_post_eq_pMute       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                    c->sStateStage.vfPV_post_eq_pEnable     = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                }
+                c->sStateStage.vfPV_post_eq_pGain       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_post_eq_pSolo       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_post_eq_pMute       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+                c->sStateStage.vfPV_post_eq_pEnable     = advance_ptr_bytes<float>(ptr, szof_stage_array);
 
                 // Only now we are ready to initialize the stage. Allocation must happen first.
                 init_state_stage(c);
 
-                c->vPreEQBands    = advance_ptr_bytes<eq_band_t>(ptr, szof_filter_arr);
-                c->vPostEQBands   = advance_ptr_bytes<eq_band_t>(ptr, szof_filter_arr);
+                c->vPreEQBands          = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+                c->vPostEQBands         = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
 
                 // Construct in-place DSP processors
                 c->sBypass.construct();
@@ -191,6 +194,10 @@ namespace lsp
             }
 
             vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
+            vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
+
+            // Check that allocation did not went out of bounds. There will be an error in log otherwise
+            lsp_assert(ptr <= &save[alloc]);
 
             // Bind ports
             lsp_trace("Binding ports");
@@ -827,30 +834,27 @@ namespace lsp
                 // it gets processed by the dspu::Bypass processor.
                 for (size_t n=0; n<samples; )
                 {
-                    const size_t to_do      = samples - n;
+                    const size_t to_do      = lsp_min(samples - n, BUFFER_SIZE);
                     const size_t to_do_up   = c->sOversamplerParams.nOversampling * to_do;
 
-                    const size_t count_up   = lsp_min(to_do_up, BUFFER_SIZE);
-                    const size_t count      = count_up / c->sOversamplerParams.nOversampling;
-
-                    c->sPreEQ.process(vBuffer, in, count);
-                    dsp::mul_k2(vBuffer, c->sShaperParams.fPreGain, count);
-                    c->sOversampler.upsample(vBuffer, vBuffer, count);
-                    c->sShaper.process_overwrite(vBuffer, vBuffer, count_up);
-                    c->sOversampler.downsample(vBuffer, vBuffer, count);
-                    dsp::mul_k2(vBuffer, c->sShaperParams.fPostGain, count);
-                    c->sPostEQ.process(vBuffer, in, count);
+                    c->sPreEQ.process(vBuffer, in, to_do);
+                    dsp::mul_k2(vBuffer, c->sShaperParams.fPreGain, to_do);
+                    c->sOversampler.upsample(vOSBuffer, vBuffer, to_do);
+                    c->sShaper.process_overwrite(vOSBuffer, vBuffer, to_do_up);
+                    c->sOversampler.downsample(vBuffer, vOSBuffer, to_do);
+                    dsp::mul_k2(vBuffer, c->sShaperParams.fPostGain, to_do);
+                    c->sPostEQ.process(vBuffer, in, to_do);
 
                     // Process the
                     //  - dry (unprocessed) signal stored in 'in'
                     //  - wet (processed) signal stored in 'vBuffer'
                     // Output the result to 'out' buffer
-                    c->sBypass.process(out, in, vBuffer, count);
+                    c->sBypass.process(out, in, vBuffer, to_do);
 
                     // Increment pointers
-                    in                     +=  count;
-                    out                    +=  count;
-                    n                      +=  count;
+                    in                     +=  to_do;
+                    out                    +=  to_do;
+                    n                      +=  to_do;
                 }
             }
         }
@@ -884,6 +888,7 @@ namespace lsp
             v->end_array();
 
             v->write("vBuffer", vBuffer);
+            v->write("vOSBuffer", vOSBuffer);
 
             v->write("pBypass", pBypass);
 
