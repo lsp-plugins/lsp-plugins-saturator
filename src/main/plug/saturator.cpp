@@ -187,6 +187,7 @@ namespace lsp
                 c->sPostEQ.construct();
 
                 c->sPreEQ.init(nBands, meta::saturator::FFT_RANK);
+                c->sOversampler.init();
                 c->sPostEQ.init(nBands, meta::saturator::FFT_RANK);
 
                 c->pIn                  = NULL;
@@ -840,10 +841,10 @@ namespace lsp
                     c->sPreEQ.process(vBuffer, in, to_do);
                     dsp::mul_k2(vBuffer, c->sShaperParams.fPreGain, to_do);
                     c->sOversampler.upsample(vOSBuffer, vBuffer, to_do);
-                    c->sShaper.process_overwrite(vOSBuffer, vBuffer, to_do_up);
+                    c->sShaper.process_overwrite(vOSBuffer, vOSBuffer, to_do_up);
                     c->sOversampler.downsample(vBuffer, vOSBuffer, to_do);
                     dsp::mul_k2(vBuffer, c->sShaperParams.fPostGain, to_do);
-                    c->sPostEQ.process(vBuffer, in, to_do);
+                    c->sPostEQ.process(vBuffer, vBuffer, to_do);
 
                     // Process the
                     //  - dry (unprocessed) signal stored in 'in'
