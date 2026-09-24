@@ -33,6 +33,9 @@ namespace lsp
     {
         typedef struct saturator
         {
+            static constexpr size_t         MAX_SAT_STAGES      = 5;
+            static constexpr size_t         TONE_STACK_BANDS    = 5;  // Low, Mid, Treble, Presence, Brilliance.
+
             static constexpr float          BAND_GAIN_MIN       = GAIN_AMP_M_36_DB;
             static constexpr float          BAND_GAIN_MAX       = GAIN_AMP_P_36_DB;
             static constexpr float          BAND_GAIN_DFL       = GAIN_AMP_0_DB;

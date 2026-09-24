@@ -83,6 +83,9 @@ namespace lsp
                     dspu::filter_params_t sOldFP;                   // Old filter parameters
                     dspu::filter_params_t sFP;                      // Filter parameters
 
+                    bool                    bHasSolo;               // Whether it has solo
+                    size_t                  nSoloBand;              // The number of the solo band
+
                     plug::IPort            *pGain;                  // Gain port
                     plug::IPort            *pSolo;                  // Solo port
                     plug::IPort            *pMute;                  // Mute port
@@ -91,6 +94,8 @@ namespace lsp
 
                 typedef struct oversampler_t
                 {
+                    dspu::Oversampler       sOvs;                   // Oversampler
+
                     dspu::over_mode_t       enOverMode;             // Oversampler Mode
                     size_t                  nOversampling;          // Oversampling Factor
                     size_t                  nOverSampleRate;        // Oversampled Rate
@@ -100,6 +105,8 @@ namespace lsp
 
                 typedef struct shaper_t
                 {
+                    dspu::Shaper            sShaper;                // The shaper
+
                     float                   fPreGain;               // Pre Gain
                     float                   fPostGain;              // Post Gain
                     float                   fSlope;                 // Slope (for sinusoidal saturator)
@@ -131,29 +138,38 @@ namespace lsp
                     plug::IPort            *pShapingFcn;            // Shaping Function
                 } shaper_t;
 
+                typedef struct tone_stack_t
+                {
+                    dspu::Equalizer         sEQ;                    // Tone control - The first filter is reserved as anti-aliasing lowpass
+                                                                    // All bands between 20 Hz and min(20 kHz, sample_rate / 2)
+                                                                    // We have TONE_STACK_BANDS bands, plus a first low pass with cutoff min(20 kHz, sample_rate / 2)
+                                                                    // sample_rate here is the base rate, not the upsampled one.
+                    eq_band_t              *vBands;
+                } tone_stack_t;
+
+                typedef struct stage_t
+                {
+                    dspu::Bypass            sBypass;                // Bypass
+                    float                   fGain;                  // Gain of the current stage
+                    tone_stack_t            sToneStack;             // Tone Stack
+                    shaper_t                sShaper;                // Shaper
+
+                    plug::IPort            *pBypass;                // Bypass
+                    plug::IPort            *pGain;                  // Gain port
+
+                } stage_t;
+
                 typedef struct channel_t
                 {
-                    size_t                  nUpdate;
-                    ch_state_stage_t        sStateStage;
+//                    size_t                  nUpdate;
+//                    ch_state_stage_t        sStateStage;
 
                     // DSP processing modules
                     dspu::Bypass            sBypass;                // Bypass
-                    dspu::Equalizer         sPreEQ;                 // Pre EQ
-                    dspu::Oversampler       sOversampler;           // Oversampler
-                    dspu::Shaper            sShaper;                // Nonlinearity
-                    dspu::Equalizer         sPostEQ;                // Post EQ
-
-                    // Parameters
-                    eq_band_t              *vPreEQBands;            // Pre EQ Bands
-                    oversampler_t           sOversamplerParams;     // Oversampler Parameters
-                    shaper_t                sShaperParams;          // Shaper Parameters
-                    eq_band_t              *vPostEQBands;           // Post EQ Bands
-
-                    bool                    bPreHasSolo;            // Whether the Pre EQ has solo.
-                    size_t                  nPreSoloBand;           // The solo band number for the Pre EQ.
-
-                    bool                    bPostHasSolo;           // Whether the Post EQ has solo.
-                    size_t                  nPostSoloBand;          // The solo band number for the Post EQ.
+                    tone_stack_t            sPreStack;              // Pre Tone Stack
+                    oversampler_t           sOversampler;           // Oversampler
+                    stage_t                *vStages;                // Nonlinear Stages
+                    tone_stack_t            sPostStack;             // Post Tone Stack
 
                     // Input ports
                     plug::IPort            *pIn;                    // Input port
@@ -166,15 +182,18 @@ namespace lsp
             protected:
                 size_t                      nSampleRate;            // Sample rate
                 size_t                      nBands;                 // Number of bands for Pre and Post EQs of all channels.
+                size_t                      nStages;                // Number of nonlinear stages in each channel
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
                 float                      *vBuffer;                // Temporary buffer for audio processing
                 float                      *vOSBuffer;              // Temporary buffer for oversampled audio processing
+                float                      *vOSStageBuffer;         // Temporary buffer for Saturation stage processing. It contains oversampled data.
+                float                      *VOSStageAccBuffer;      // Temporary buffer where we accumulate the results of the saturation stages.
 
                 plug::IPort                *pBypass;                // Bypass
                 plug::IPort                *pComment;               // Comment
 
-                const float                *vFreqs;                 // Pointer to the Frequency vector in metadata, a constant.
+//                const float                *vFreqs;                 // Pointer to the Frequency vector in metadata, a constant.
 
                 uint8_t                    *pData;                  // Allocated data
 
@@ -186,9 +205,11 @@ namespace lsp
                 static dspu::sh_function_t  get_shaping_function(size_t portValue);
 
             protected:
-                void                init_state_stage(channel_t *c);
-                void                setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
+//                void                init_state_stage(channel_t *c);
                 void                commit_staged_state_change(channel_t *c);
+                void                setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
+                void                process_stage(stage_t *stage, float *dst, const float *src, size_t count);
+                void                process_stages(channel_t *c, float *dst, const float *src, size_t count);
 
             public:
                 explicit saturator(const meta::plugin_t *meta, size_t bands, const float *vfreqs);

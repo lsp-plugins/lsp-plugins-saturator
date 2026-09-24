@@ -34,6 +34,7 @@ namespace lsp
     {
         /* The size of temporary buffer for audio processing */
         static constexpr size_t BUFFER_SIZE             = 0x200;
+        static constexpr size_t STAGE_BUFFER_SIZE       = 0x200;
 
         //---------------------------------------------------------------------
         // Plugin factory
@@ -93,18 +94,20 @@ namespace lsp
                     ++nChannels;
 
             // Initialize other parameters
-            nSampleRate     = 0;
-            nBands          = bands;
-            vChannels       = NULL;
-            vBuffer         = NULL;
-            vOSBuffer       = NULL;
+            nSampleRate         = 0;
+            nBands              = bands;
+            vChannels           = NULL;
+            vBuffer             = NULL;
+            vOSBuffer           = NULL;
+            vOSStageBuffer      = NULL;
+            VOSStageAccBuffer   = NULL;
 
-            pBypass         = NULL;
-            pComment        = NULL;
+            pBypass             = NULL;
+            pComment            = NULL;
 
-            vFreqs          = vfreqs;
+//            vFreqs          = vfreqs;
 
-            pData           = NULL;
+            pData               = NULL;
         }
 
         saturator::~saturator()
@@ -118,77 +121,113 @@ namespace lsp
             Module::init(wrapper, ports);
 
             // Calculate the number of bytes to allocate
-            // A single filter array is an array of nBands `eq_band_t` objects:
-            const size_t szof_eq_bands  = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
-            // We have nChannels `channel_t` objects:
-            const size_t szof_channels  = align_size(sizeof(channel_t) * nChannels, OPTIMAL_ALIGN);
+
             // We have 1x audio buffer for processing:
-            const size_t szof_buf       = BUFFER_SIZE * sizeof(float);
-            const size_t szof_osbuf     = szof_buf * meta::saturator::SAT_OVS_MAX;
-            /** Each `ch_state_stage_t` object has:
-             * 1x vfPV_pre_eq_pGain vector of nBands float
-             * 1x vfPV_pre_eq_pSolo vector of nBands float
-             * 1x vfPV_pre_eq_pMute vector of nBands float
-             * 1x vfPV_pre_eq_pEnable vector of nBands float
-             * 1x vfPV_post_eq_pGain vector of nBands float
-             * 1x vfPV_post_eq_pSolo vector of nBands float
-             * 1x vfPV_post_eq_pMute vector of nBands float
-             * 1x vfPV_post_eq_pEnable vector of nBands float
-             *
-             * So, 8 arrays of nBands floats per `ch_state_stage_t` object.
-             * We have a `ch_state_stage_t` object per channel. So:
+            const size_t szof_buf           = BUFFER_SIZE * sizeof(float);
+            // Then, we have 1x audio buffer for oversampled data.
+            const size_t szof_osbuf         = szof_buf * meta::saturator::SAT_OVS_MAX;
+            // Then, we have 2x audio buffer for temporary saturator stage processing:
+            const size_t szof_stage_buf     = STAGE_BUFFER_SIZE * sizeof(float);
+            const size_t szof_stage_bufs    = 2 * szof_stage_buf;
+
+            // In total
+            const size_t szos_bufs          = szof_buf + szof_osbuf + szof_stage_bufs;
+
+            // We have nChannels `channel_t` objects:
+            const size_t szof_channels      = align_size(sizeof(channel_t) * nChannels, OPTIMAL_ALIGN);
+
+            /** In each channel we have multiple Tone stacks, each containing an array of nBands vBands
+             *  We have:
+             *  1x Top level pre tone stack
+             *  1x Top level post tone stack
+             *  1x tone stack in each saturator stage, nStages stages in total
+             *  Therefore:
              */
-            const size_t szof_stage_array   = nBands * sizeof(float);
+            const size_t szof_eq_bands      = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
+            const size_t szof_eqs           = (2 + nStages) * szof_eq_bands;
+
+            // We have nStages per channel
+            const size_t szof_stage_array   = align_size(sizeof(stage_t) * nStages, OPTIMAL_ALIGN);
+            const size_t szof_stages        = szof_stage_array * nChannels;
+
+            // Each stage has a tone stack, each channel has an array of stages
+            const size_t szof_tone_stack    = align_size(sizeof(tone_stack_t) * nStages, OPTIMAL_ALIGN);
+            const size_t szof_tone_stacks   = szof_tone_stack * nChannels;
+
+
+//            /** Each `ch_state_stage_t` object has:
+//             * 1x vfPV_pre_eq_pGain vector of nBands float
+//             * 1x vfPV_pre_eq_pSolo vector of nBands float
+//             * 1x vfPV_pre_eq_pMute vector of nBands float
+//             * 1x vfPV_pre_eq_pEnable vector of nBands float
+//             * 1x vfPV_post_eq_pGain vector of nBands float
+//             * 1x vfPV_post_eq_pSolo vector of nBands float
+//             * 1x vfPV_post_eq_pMute vector of nBands float
+//             * 1x vfPV_post_eq_pEnable vector of nBands float
+//             *
+//             * So, 8 arrays of nBands floats per `ch_state_stage_t` object.
+//             * We have a `ch_state_stage_t` object per channel. So:
+//             */
+//            const size_t szof_stage_array   = nBands * sizeof(float);
 
             // In total:
-            const size_t alloc          =
-                szof_channels +         // vChannels
-                nChannels * (
-                    szof_eq_bands*2 +               // vPreEQBands + vPostEQBands
-                    8 * szof_stage_array            // channel_t::sStateStage buffers
-                ) +
-                szof_buf +              // vBuffer
-                szof_osbuf;             // vOSBuffer
+            const size_t alloc =
+                    szos_bufs +         // All audio buffers
+                    szof_channels +     // Top level channel size
+                    szof_eqs +          // Size of all EQ bands
+                    szof_stages +       // Size of all nonlinear stages
+                    szof_tone_stacks;   // Size of all tone stacks
 
             // Allocate memory-aligned data
-            uint8_t *ptr                = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
+            uint8_t *ptr = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
             if (ptr == NULL)
                 return;
             lsp_guard_assert(uint8_t * const save = ptr);
 
             // Assign all resources
-            vChannels                   = advance_ptr_bytes<channel_t>(ptr, szof_channels);
+            vChannels = advance_ptr_bytes<channel_t>(ptr, szof_channels);
 
             for (size_t i=0; i < nChannels; ++i)
             {
                 channel_t *c = &vChannels[i];
 
-                c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_pre_eq_pMute        = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_pre_eq_pEnable      = advance_ptr_bytes<float>(ptr, szof_stage_array);
-
-                c->sStateStage.vfPV_post_eq_pGain       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_post_eq_pSolo       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_post_eq_pMute       = advance_ptr_bytes<float>(ptr, szof_stage_array);
-                c->sStateStage.vfPV_post_eq_pEnable     = advance_ptr_bytes<float>(ptr, szof_stage_array);
-
-                // Only now we are ready to initialize the stage. Allocation must happen first.
-                init_state_stage(c);
-
-                c->vPreEQBands          = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
-                c->vPostEQBands         = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
-
-                // Construct in-place DSP processors
                 c->sBypass.construct();
-                c->sPreEQ.construct();
-                c->sOversampler.construct();
-                c->sShaper.construct();
-                c->sPostEQ.construct();
 
-                c->sPreEQ.init(nBands, meta::saturator::FFT_RANK);
-                c->sOversampler.init();
-                c->sPostEQ.init(nBands, meta::saturator::FFT_RANK);
+                c->sPreStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+                c->sPreStack.sEQ.construct();
+                c->sPreStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
+
+                c->sOversampler.sOvs.construct();
+                c->sOversampler.sOvs.init();
+
+                c->vStages = advance_ptr_bytes<stage_t>(ptr, szof_stage_array);
+                for (size_t s=0; s<nStages; ++s)
+                {
+                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+                    c->vStages[s].sToneStack.sEQ.construct();
+                    c->vStages[s].sToneStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
+                }
+
+                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+                c->sPostStack.sEQ.construct();
+                c->sPostStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
+
+
+
+
+
+//                c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_pre_eq_pMute        = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_pre_eq_pEnable      = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//
+//                c->sStateStage.vfPV_post_eq_pGain       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_post_eq_pSolo       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_post_eq_pMute       = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//                c->sStateStage.vfPV_post_eq_pEnable     = advance_ptr_bytes<float>(ptr, szof_stage_array);
+//
+//                // Only now we are ready to initialize the stage. Allocation must happen first.
+//                init_state_stage(c);
 
                 c->pIn                  = NULL;
                 c->pOut                 = NULL;
@@ -196,6 +235,8 @@ namespace lsp
 
             vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
             vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
+            vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            VOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
 
             // Check that allocation did not went out of bounds. There will be an error in log otherwise
             lsp_assert(ptr <= &save[alloc]);
@@ -508,6 +549,44 @@ namespace lsp
             {
                 fp->nType   = dspu::FLT_NONE;
                 fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+            }
+        }
+
+        void saturator::process_stage(stage_t *stage, float *dst, const float *src, size_t count)
+        {
+            for (size_t n=0; n<count;)
+            {
+                const size_t to_do = lsp_min(count - n, STAGE_BUFFER_SIZE);
+
+                dsp::mul3(vOSStageBuffer, src, stage->fGain, to_do);
+                stage->sToneStack.sEQ.process(vOSStageBuffer, vOSStageBuffer, to_do);
+                stage->sShaper.sShaper.process_overwrite(vOSStageBuffer, vOSStageBuffer, to_do);
+                stage->sBypass.process(dst, src, vOSStageBuffer, to_do);
+
+                dst     += to_do;
+                src     += to_do;
+                n       += to_do;
+            }
+        }
+
+        void saturator::process_stages(channel_t *c, float *dst, const float *src, size_t count)
+        {
+            for (size_t n=0; n<count;)
+            {
+                const size_t to_do = lsp_min(count - n, STAGE_BUFFER_SIZE);
+
+                dsp::copy(VOSStageAccBuffer, src, to_do);
+
+                for (size_t s=0; s<c->nStages; ++s)
+                {
+                    process_stage(&c->vStages[s], VOSStageAccBuffer, VOSStageAccBuffer, to_do);
+                    dsp::copy(src, VOSStageAccBuffer, to_do);
+
+                    dst     += to_do;
+                    src     += to_do;
+                    n       += to_do;
+                }
+
             }
         }
 
