@@ -1,0 +1,122 @@
+<plugin resizable="true">
+	<hbox spacing="4">
+		<group text="groups.saturator_stages" ipadding="0" fill="true">
+			<tabs id="sts">
+				<ui:for id="i" first="1" count="5">
+				<hbox spacing="4" expand="true">
+				
+					<group ui:inject="GraphGroup" ipadding="0" expand="true" fill="true" text="labels.graphs.saturator_function">
+						<graph width.min="550" height.min="550" expand="true" fill="true">
+							<origin halign="0.0" valign="0.0" visible="false"/>
+							
+							<!-- Grid -->
+							<ui:attributes color="graph_sec">
+								<marker v="-1.0"/>
+								<marker v="-0.5"/>
+								<marker v="0.5"/>
+								<marker v="1.0"/>
+								<marker v="-1.0" ox="1" oy="0"/>
+								<marker v="1.0" ox="1" oy="0"/>
+							</ui:attributes>
+							
+							<!-- Axes -->
+							<axis min="-1.0" max="1.0" color="graph_prim" angle="0.0" log="false"/>
+							<axis min="-1.0" max="1.0" color="graph_prim" angle="0.5" log="false" visibility="false"/>
+							
+							<!-- Meshes -->
+							<mesh id="vo{i}" width="3"/>
+		
+							<!-- Text -->
+							<ui:attributes y="0" halign="1" valign="1" text="graph.values.x::2f">
+								<text x="0" text="graph.axis.amplitude"/>
+								<text x="0.5" text:value="0.5"/>
+								<text x="1.0" text:value="1"/>
+								<text x="1.5" text:value="1.5"/>
+								<text x="2.0" text:value="2" halign="-1"/>
+							</ui:attributes>
+							<ui:attributes x="0" halign="1" valign="-1">
+								<text y="-1" text="-1"/>
+								<text y="0" text="0"/>
+								<text y="1" text="1"/>
+								<text y="2" text="graph.axis.amplitude"/>
+							</ui:attributes>	
+										
+						</graph>
+					</group>
+					
+					<group text="groups.saturator_parameters" ipadding="0" fill="true">
+						<grid rows="16" cols="2">
+							<label text="labels.bypass">
+							<button id="bp{i}" >
+							
+							<label text="labels.gain">
+							<knob id="gn{i}" />
+							
+							<label text="labels.bass">
+							<knob id="bs{i}" />
+							
+							<label text="labels.middle">
+							<knob id="md{i}" />
+							
+							<label text="labels.treble">
+							<knob id="tb{i}" />
+							
+							<label text="labels.saturator_function">
+							<combo id="sp{i}" />
+							
+							<label text="labels.slope" visibility="(:sp{i} ieq 0)" />
+							<knob id="sl{i}" visibility="(:sp{i} ieq 0)" />
+							
+							<label text="labels.shape" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)" />
+							<knob id="sh{i}" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)"/>
+							
+							<label text="labels.high_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+							<knob id="hl{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+							
+							<label text="labels.low_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+							<knob id="ll{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+							
+							<label text="labels.radius" visibility="(:sp{i} ieq 8)" />
+							<knob id="rd{i}" visibility="(:sp{i} ieq 8)" />
+							
+							<label text="labels.levels" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
+							<knob id="lv{i}" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
+							
+							<label text="labels.continuos_companding" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
+							<knob id="cp{i}" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
+							
+							<label text="labels.quantized_companding" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+							<knob id="qp{i}" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+							
+							<label text="labels.bias" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+							<knob id="bs{i}" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+							
+							<label text="labels.blend" visibility="(:sp{i} ieq 21)" />
+							<knob id="bl{i}" visibility="(:sp{i} ieq 21)" />
+							
+							<label text="labels.drive" visibility="(:sp{i} ieq 21)" />
+							<knob id="dv{i}" visibility="(:sp{i} ieq 21)" />
+						</grid>
+					</group>
+				
+				</hbox>
+			
+			</tabs>
+		</group>
+		
+		<vbox spacing="4" expand="true">
+			<group text="groups.general" ipadding="0" fill="true">
+				<grid rows="3" cols="2">
+					<label text="labels.oversampling"/>
+					<combo id="ov"/>
+					
+					<label text="labels.pre_gain"/>
+					<knob id="ge" />
+					
+					<label text="labels.post_gain"/>
+					<knob id="gt" />
+				</grid>
+			</group>
+		</vbox>		
+	</hbox>
+</plugin>

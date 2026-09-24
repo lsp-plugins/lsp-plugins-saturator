@@ -33,8 +33,15 @@ namespace lsp
     {
         typedef struct saturator
         {
-            static constexpr size_t         MAX_SAT_STAGES      = 5;
-            static constexpr size_t         TONE_STACK_BANDS    = 5;  // Low, Mid, Treble, Presence, Brilliance.
+            static constexpr size_t         MAX_STAGES          = 5;
+            static constexpr size_t         MAX_TONE_BANDS      = 3;
+
+            static constexpr size_t         MESH_SIZE   = 280;
+
+            static constexpr float          STAGE_GAIN_MIN      = GAIN_AMP_M_36_DB;
+            static constexpr float          STAGE_GAIN_MAX      = GAIN_AMP_P_36_DB;
+            static constexpr float          STAGE_GAIN_DFL      = GAIN_AMP_0_DB;
+            static constexpr float          STAGE_GAIN_STEP     = 0.025f;
 
             static constexpr float          BAND_GAIN_MIN       = GAIN_AMP_M_36_DB;
             static constexpr float          BAND_GAIN_MAX       = GAIN_AMP_P_36_DB;
@@ -148,24 +155,12 @@ namespace lsp
 
                 SAT_SH_FCN_DEFAULT = SAT_SH_FCN_HYPERBOLIC
             };
-
-            static const float band_frequencies_x3[];
-            static const float band_frequencies_x8[];
-            static const float band_frequencies_x16[];
-            static const float band_frequencies_x32[];
-
         } saturator;
 
         // Plugin type metadata
-        extern const meta::plugin_t saturator_x3_mono;
-        extern const meta::plugin_t saturator_x3_stereo;
-        extern const meta::plugin_t saturator_x8_mono;
-        extern const meta::plugin_t saturator_x8_stereo;
-        extern const meta::plugin_t saturator_x16_mono;
-        extern const meta::plugin_t saturator_x16_stereo;
-        extern const meta::plugin_t saturator_x32_mono;
-        extern const meta::plugin_t saturator_x32_stereo;
-
+        extern const meta::plugin_t saturator_mono;
+        extern const meta::plugin_t saturator_stereo;
+        extern const meta::plugin_t saturator_lr;
     } /* namespace meta */
 } /* namespace lsp */
 

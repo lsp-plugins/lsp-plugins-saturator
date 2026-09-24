@@ -44,63 +44,64 @@ namespace lsp
         static const int plugin_classes[]           = { C_DISTORTION, -1 };
         static const int clap_features_mono[]       = { CF_AUDIO_EFFECT, CF_DISTORTION, CF_MONO, -1 };
         static const int clap_features_stereo[]     = { CF_AUDIO_EFFECT, CF_DISTORTION, CF_STEREO, -1 };
+        static const int clap_features_lr[]         = { CF_AUDIO_EFFECT, CF_DISTORTION, CF_STEREO, -1 }; // TODO: Same as stereo?
 
-        static const port_item_t sat_band_slopes[] =
-        {
-            { "BT48",                   "eq.slope.bt48" },
-            { "MT48",                   "eq.slope.mt48" },
-            { "BT72",                   "eq.slope.bt72" },
-            { "MT72",                   "eq.slope.mt72" },
-            { "BT96",                   "eq.slope.bt96" },
-            { "MT96",                   "eq.slope.mt96" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_eq_modes[] =
-        {
-            { "IIR",                    "eq.type.iir" },
-            { "FIR",                    "eq.type.fir" },
-            { "FFT",                    "eq.type.fft" },
-            { "SPM",                    "eq.type.spm" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_select_3lr[] =
-        {
-            { "Bands Left",             "eq.bands_l" },
-            { "Bands Right",            "eq.bands_r" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_select_8lr[] =
-        {
-            { "Bands Left",             "eq.bands_l" },
-            { "Bands Right",            "eq.bands_r" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_select_16lr[] =
-        {
-            { "Bands Left",             "eq.bands_l" },
-            { "Bands Right",            "eq.bands_r" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_select_32[] =
-        {
-            { "Bands 1-16",             "eq.bands_1:16" },
-            { "Bands 17-32",            "eq.bands_17:32" },
-            { NULL, NULL }
-        };
-
-        static const port_item_t sat_band_select_32lr[] =
-        {
-            { "Bands Left 1-16",        "eq.bands_l_1:16" },
-            { "Bands Right 1-16",       "eq.bands_r_1:16" },
-            { "Bands Left 17-32",       "eq.bands_l_17:32" },
-            { "Bands Right 17-32",      "eq.bands_r_17:32" },
-            { NULL, NULL }
-        };
+//        static const port_item_t sat_band_slopes[] =
+//        {
+//            { "BT48",                   "eq.slope.bt48" },
+//            { "MT48",                   "eq.slope.mt48" },
+//            { "BT72",                   "eq.slope.bt72" },
+//            { "MT72",                   "eq.slope.mt72" },
+//            { "BT96",                   "eq.slope.bt96" },
+//            { "MT96",                   "eq.slope.mt96" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_eq_modes[] =
+//        {
+//            { "IIR",                    "eq.type.iir" },
+//            { "FIR",                    "eq.type.fir" },
+//            { "FFT",                    "eq.type.fft" },
+//            { "SPM",                    "eq.type.spm" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_select_3lr[] =
+//        {
+//            { "Bands Left",             "eq.bands_l" },
+//            { "Bands Right",            "eq.bands_r" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_select_8lr[] =
+//        {
+//            { "Bands Left",             "eq.bands_l" },
+//            { "Bands Right",            "eq.bands_r" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_select_16lr[] =
+//        {
+//            { "Bands Left",             "eq.bands_l" },
+//            { "Bands Right",            "eq.bands_r" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_select_32[] =
+//        {
+//            { "Bands 1-16",             "eq.bands_1:16" },
+//            { "Bands 17-32",            "eq.bands_17:32" },
+//            { NULL, NULL }
+//        };
+//
+//        static const port_item_t sat_band_select_32lr[] =
+//        {
+//            { "Bands Left 1-16",        "eq.bands_l_1:16" },
+//            { "Bands Right 1-16",       "eq.bands_r_1:16" },
+//            { "Bands Left 17-32",       "eq.bands_l_17:32" },
+//            { "Bands Right 17-32",      "eq.bands_r_17:32" },
+//            { NULL, NULL }
+//        };
 
         static const port_item_t sat_oversampler_mode[] =
         {
@@ -140,10 +141,28 @@ namespace lsp
             { NULL, NULL }
         };
 
-        #define SATURATOR_CONTROLS(id, label, alias)  \
-            COMBO("ov" id, "Oversampler Mode" label, "Ov. Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
-            AMP_GAIN_RANGE("ge" id, "Pre gain" label, "Pre gain" alias, saturator::PRE_GAIN_DFL, saturator::PRE_GAIN_MIN, saturator::PRE_GAIN_MAX), \
-            AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX), \
+        static const port_item_t sat_stages[] =
+        {
+            {"1",           NULL },
+            {"2",           NULL },
+            {"3",           NULL },
+            {"4",           NULL },
+            {"5",           NULL },
+            { NULL, NULL }
+        };
+
+        #define STAGE_VISUALOUTS(id, label) \
+            MESH("vo" id, "Saturation Function" label, 2, saturator::MESH_SIZE)
+
+        #define STAGE_BYPASS(id, label) \
+            { "bp" id, "Bypass" label, NULL, U_BOOL, R_BYPASS, 0, F_UPPER | F_LOWER, 0, 1, 0, 0, NULL, NULL, NULL }
+
+        #define STAGE_CONTROLS(id, label, alias)  \
+            STAGE_BYPASS(id, label), \
+            AMP_GAIN_RANGE("gn" id, "Gain" label, "Gain" alias, saturator::STAGE_GAIN_DFL, saturator::STAGE_GAIN_MIN, saturator::STAGE_GAIN_MAX), \
+            AMP_GAIN_RANGE("bs" id, "Bass" label, "Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("md" id, "Mid" label, "Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("tb" id, "Treble" label, "Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
             CONTROL("sl" id, "Slope" label, "Slope" alias, U_NONE, saturator::SLOPE), \
             CONTROL("sh" id, "Shape" label, "Shape" alias, U_NONE, saturator::SHAPE), \
             CONTROL("hl" id, "High Level" label, "High Level" alias, U_NONE, saturator::HIGH_LEVEL), \
@@ -157,124 +176,72 @@ namespace lsp
             CONTROL("dv" id, "Drive" label, "Drive" alias, U_NONE, saturator::DRIVE), \
             COMBO("sp" id, "Shaping Function" label, "Shaping Fun." alias, saturator::SAT_SH_FCN_DEFAULT, sat_shaping_fcn)
 
-        #define SATURATOR_CONTROLS_MONO     SATURATOR_CONTROLS("", "", "")
-        #define SATURATOR_CONTROLS_STEREO   SATURATOR_CONTROLS("", "", "")
-        #define SATURATOR_CONTROLS_LR       SATURATOR_CONTROLS("l", " Left", " L"), SATURATOR_CONTROLS("r", " Right", " R")
+        #define STAGE_SELECTOR(sat_stages) \
+            COMBO("sts", "Saturator Stage Selector", "St selector", 0, sat_stages)
 
-        #define EQ_BAND(id, label, alias, x, f) \
-            SWITCH("xs" id "_" #x, "Band solo" label " " f, "Solo " f alias, 0.0f), \
-            SWITCH("xm" id "_" #x, "Band mute" label " " f, "Mute " f alias, 0.0f), \
-            SWITCH("xe" id "_" #x, "Band on" label " " f, "On " f alias, 1.0f), \
-            LOG_CONTROL("g" id "_" #x, "Band gain" label " " f, "Gain " f alias, U_GAIN_AMP, saturator::BAND_GAIN)
+        #define STAGE_VISUALOUTS_MONO \
+            STAGE_VISUALOUTS("1", " 1"), \
+            STAGE_VISUALOUTS("2", " 2"), \
+            STAGE_VISUALOUTS("3", " 3"), \
+            STAGE_VISUALOUTS("4", " 4"), \
+            STAGE_VISUALOUTS("5", " 5")
 
-        #define EQ_BAND_PRE_MONO(x, f)  EQ_BAND("p", " Pre", " Pre", x, f)
-        #define EQ_BAND_POST_MONO(x, f) EQ_BAND("s", " Post", " Post", x, f)
+        #define STAGE_CONTROLS_MONO \
+            STAGE_CONTROLS("1", " 1", "1"), \
+            STAGE_CONTROLS("2", " 2", "2"), \
+            STAGE_CONTROLS("3", " 3", "3"), \
+            STAGE_CONTROLS("4", " 4", "4"), \
+            STAGE_CONTROLS("5", " 5", "5")
 
-        #define EQ_BAND_PRE_STEREO(x, f)    EQ_BAND("p", "Pre", "Pre", x, f)
-        #define EQ_BAND_POST_STEREO(x, f)   EQ_BAND("s", "Post", "Post", x, f)
+        #define STAGE_VISUALOUTS_STEREO \
+            STAGE_VISUALOUTS("1", " 1"), \
+            STAGE_VISUALOUTS("2", " 2"), \
+            STAGE_VISUALOUTS("3", " 3"), \
+            STAGE_VISUALOUTS("4", " 4"), \
+            STAGE_VISUALOUTS("5", " 5")
 
-        // TODO: Make other pre and post variants
-        #define EQ_BAND_LR(x, f)        EQ_BAND("l", " Left", " L", x, f), EQ_BAND("r", " Right", " R", x, f)
+        #define STAGE_CONTROLS_STEREO \
+            STAGE_CONTROLS("1", " 1", "1"), \
+            STAGE_CONTROLS("2", " 2", "2"), \
+            STAGE_CONTROLS("3", " 3", "3"), \
+            STAGE_CONTROLS("4", " 4", "4"), \
+            STAGE_CONTROLS("5", " 5", "5")
 
-        const float saturator::band_frequencies_x3[] = {125.0f, 1000.0f, 18000.0f};
+        #define STAGE_VISUALOUTS_LR \
+            STAGE_VISUALOUTS("1l", " 1 Left"), STAGE_VISUALOUTS("1r", " 1 Right"), \
+            STAGE_VISUALOUTS("2l", " 2 Left"), STAGE_VISUALOUTS("2r", " 2 Right"), \
+            STAGE_VISUALOUTS("3l", " 3 Left"), STAGE_VISUALOUTS("3r", " 3 Right"), \
+            STAGE_VISUALOUTS("4l", " 4 Left"), STAGE_VISUALOUTS("4r", " 4 Right"), \
+            STAGE_VISUALOUTS("5l", " 5 Left"), STAGE_VISUALOUTS("5r", " 5 Right")
 
-        #define EQ_BANDS_3X(band) \
-            band(0, "125"), \
-            band(1, "1K"), \
-            band(2, "18K")
+        #define STAGE_CONTROLS_LR \
+            STAGE_CONTROLS("1l", " 1 Left", " 1L"), STAGE_CONTROLS("1r", " 1 Right", " 1R"), \
+            STAGE_CONTROLS("2l", " 2 Left", " 2L"), STAGE_CONTROLS("2r", " 2 Right", " 2R"), \
+            STAGE_CONTROLS("3l", " 3 Left", " 3L"), STAGE_CONTROLS("3r", " 3 Right", " 3R"), \
+            STAGE_CONTROLS("4l", " 4 Left", " 4L"), STAGE_CONTROLS("4r", " 4 Right", " 4R"), \
+            STAGE_CONTROLS("5l", " 5 Left", " 5L"), STAGE_CONTROLS("5r", " 5 Right", " 5R")
 
-        const float saturator::band_frequencies_x8[] = {
-                31.5f, 63.0f, 125.0f, 250.0f, 500.0f, 1000.0f, 4000.0f, 8000.0f,
-        };
+        #define COMMON_CONTROLS(id, label, alias) \
+            COMBO("ov" id, "Oversampler Mode" label, "Ov. Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
+            AMP_GAIN_RANGE("ge" id, "Pre gain" label, "Pre gain" alias, saturator::PRE_GAIN_DFL, saturator::PRE_GAIN_MIN, saturator::PRE_GAIN_MAX), \
+            AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX)
 
-        // Octave bands, except the first and the last https://en.wikipedia.org/wiki/Octave_band#Octave_bands.
-        #define EQ_BANDS_8X(band) \
-            band(0, "31.5"), \
-            band(1, "63"), \
-            band(2, "125"), \
-            band(3, "250"), \
-            band(4, "500"), \
-            band(5, "1K"), \
-            band(6, "4K"), \
-            band(7, "8K")
-
-        const float saturator::band_frequencies_x16[] = {
-                16.0f, 25.0f, 40.0f, 63.0f, 100.0f, 160.0f, 250.0f, 400.0f,
-                630.0f, 1000.0f, 1600.0f, 2500.0f, 4000.0f, 6300.0f, 10000.0f,
-                16000.0f,
-        };
-
-        #define EQ_BANDS_16X(band) \
-            band(0, "16"), \
-            band(1, "25"), \
-            band(2, "40"), \
-            band(3, "63"), \
-            band(4, "100"), \
-            band(5, "160"), \
-            band(6, "250"), \
-            band(7, "400"), \
-            band(8, "630"), \
-            band(9, "1K"), \
-            band(10, "1.6K"), \
-            band(11, "2.5K"), \
-            band(12, "4K"), \
-            band(13, "6.3K"), \
-            band(14, "10K"), \
-            band(15, "16K")
-
-        const float saturator::band_frequencies_x32[] = {
-                16.0f, 20.0f, 23.0f, 31.5f, 40.0f, 50.0f, 63.0f, 80.0f,
-                100.0f, 125.0f, 160.0f, 200.0f, 250.0f, 315.0f, 400.0f, 500.0f,
-                630.0f, 800.0f, 1000.0f, 1250.0f, 1600.0f, 2000.0f, 2500.0f, 3150.0f,
-                4000.0f, 5000.0f, 6300.0f, 8000.0f, 10000.0f, 12500.0f, 16000.0f, 20000.0f,
-        };
-
-        // Third octave bands: https://en.wikipedia.org/wiki/Octave_band#One-third_octave_bands
-        #define EQ_BANDS_32X(band) \
-            band(0, "16"), \
-            band(1, "20"), \
-            band(2, "25"), \
-            band(3, "31.5"), \
-            band(4, "40"), \
-            band(5, "50"), \
-            band(6, "63"), \
-            band(7, "80"), \
-            band(8, "100"), \
-            band(9, "125"), \
-            band(10, "160"), \
-            band(11, "200"), \
-            band(12, "250"), \
-            band(13, "315"), \
-            band(14, "400"), \
-            band(15, "500"), \
-            band(16, "630"), \
-            band(17, "800"), \
-            band(18, "1K"), \
-            band(19, "1.25K"), \
-            band(20, "1.6K"), \
-            band(21, "2K"), \
-            band(22, "2.5K"), \
-            band(23, "3.15K"), \
-            band(24, "4K"), \
-            band(25, "5K"), \
-            band(26, "6.3K"), \
-            band(27, "8K"), \
-            band(28, "10K"), \
-            band(29, "12.5K"), \
-            band(30, "16K"), \
-            band(31, "20K")
+        #define COMMON_CONTROLS_MONO        COMMON_CONTROLS("", "", "")
+        #define COMMON_CONTROLS_STEREO      COMMON_CONTROLS("", "", "")
+        #define COMMON_CONTROLS_LR          COMMON_CONTROLS ("l", " Left", " L"), COMMON_CONTROLS ("r", " Right", " R")
 
         // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x3_mono_ports[] =
+        static const port_t saturator_mono_ports[] =
         {
             // Input and output audio ports
             PORTS_MONO_PLUGIN,
 
             // Input controls
             BYPASS,
-            SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_3X(EQ_BAND_PRE_MONO),
-            EQ_BANDS_3X(EQ_BAND_POST_MONO),
+            COMMON_CONTROLS_MONO,
+            STAGE_SELECTOR(sat_stages),
+            STAGE_CONTROLS_MONO,
+            STAGE_VISUALOUTS_MONO,
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -283,16 +250,17 @@ namespace lsp
         };
 
         // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x3_stereo_ports[] =
+        static const port_t saturator_stereo_ports[] =
         {
             // Input and output audio ports
             PORTS_STEREO_PLUGIN,
 
             // Input controls
             BYPASS,
-            SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_3X(EQ_BAND_PRE_STEREO),
-            EQ_BANDS_3X(EQ_BAND_POST_STEREO),
+            COMMON_CONTROLS_STEREO,
+            STAGE_SELECTOR(sat_stages),
+            STAGE_CONTROLS_STEREO,
+            STAGE_VISUALOUTS_STEREO,
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -301,106 +269,17 @@ namespace lsp
         };
 
         // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x8_mono_ports[] =
-        {
-            // Input and output audio ports
-            PORTS_MONO_PLUGIN,
-
-            // Input controls
-            BYPASS,
-            SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_8X(EQ_BAND_PRE_MONO),
-            EQ_BANDS_8X(EQ_BAND_POST_MONO),
-            OPT_STRING("comment", "Comment", 128),
-
-            // TODO: Output controls
-
-            PORTS_END
-        };
-
-        // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x8_stereo_ports[] =
+        static const port_t saturator_lr_ports[] =
         {
             // Input and output audio ports
             PORTS_STEREO_PLUGIN,
 
             // Input controls
             BYPASS,
-            SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_8X(EQ_BAND_PRE_STEREO),
-            EQ_BANDS_8X(EQ_BAND_POST_STEREO),
-            OPT_STRING("comment", "Comment", 128),
-
-            // TODO: Output controls
-
-            PORTS_END
-        };
-
-        // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x16_mono_ports[] =
-        {
-            // Input and output audio ports
-            PORTS_MONO_PLUGIN,
-
-            // Input controls
-            BYPASS,
-            SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_16X(EQ_BAND_PRE_MONO),
-            EQ_BANDS_16X(EQ_BAND_POST_MONO),
-            OPT_STRING("comment", "Comment", 128),
-
-            // TODO: Output controls
-
-            PORTS_END
-        };
-
-        // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x16_stereo_ports[] =
-        {
-            // Input and output audio ports
-            PORTS_STEREO_PLUGIN,
-
-            // Input controls
-            BYPASS,
-            SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_16X(EQ_BAND_PRE_STEREO),
-            EQ_BANDS_16X(EQ_BAND_POST_STEREO),
-            OPT_STRING("comment", "Comment", 128),
-
-            // TODO: Output controls
-
-            PORTS_END
-        };
-
-        // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x32_mono_ports[] =
-        {
-            // Input and output audio ports
-            PORTS_MONO_PLUGIN,
-
-            // Input controls
-            BYPASS,
-            SATURATOR_CONTROLS_MONO,
-            EQ_BANDS_32X(EQ_BAND_PRE_MONO),
-            EQ_BANDS_32X(EQ_BAND_POST_MONO),
-            OPT_STRING("comment", "Comment", 128),
-
-            // TODO: Output controls
-
-            PORTS_END
-        };
-
-        // NOTE: Port identifiers should not be longer than 7 characters as it will overflow VST2 parameter name buffers
-        static const port_t saturator_x32_stereo_ports[] =
-        {
-            // Input and output audio ports
-            PORTS_STEREO_PLUGIN,
-
-            // Input controls
-            BYPASS,
-            SATURATOR_CONTROLS_STEREO,
-            EQ_BANDS_32X(EQ_BAND_PRE_STEREO),
-            EQ_BANDS_32X(EQ_BAND_POST_STEREO),
+            COMMON_CONTROLS_LR,
+            STAGE_SELECTOR(sat_stages),
+            STAGE_CONTROLS_LR,
+            STAGE_VISUALOUTS_LR,
             OPT_STRING("comment", "Comment", 128),
 
             // TODO: Output controls
@@ -417,247 +296,95 @@ namespace lsp
             "This plugin allows one to perform saturation of input signal, with pre- and post- EQ." // TODO: This should be the same to the english version in 'bundles.json'
         };
 
-        const plugin_t saturator_x3_mono =
+        const plugin_t saturator_mono =
         {
-            "Sättigungssensor x3 Mono",
-            "Saturator x3 Mono",
-            "Saturator x3 Mono",
-            "ST3M",
+            "Sättigungssensor Mono",
+            "Saturator Mono",
+            "Saturator Mono",
+            "STM",
             &developers::s_tronci,
-            "saturator_x3_mono",
+            "saturator_mono",
             {
-                LSP_LV2_URI("saturator_x3_mono"),
-                LSP_LV2UI_URI("saturator_x3_mono"),
+                LSP_LV2_URI("saturator_mono"),
+                LSP_LV2UI_URI("saturator_mono"),
                 "xxxx",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st3m    xxxx"),
-                LSP_VST3UI_UID("st3m    xxxx"),
+                LSP_VST3_UID("stm    xxxx"),
+                LSP_VST3UI_UID("stm    xxxx"),
                 1,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x3_mono"),
-                LSP_CLAP_URI("saturator_x3_mono"),
-                LSP_GST_UID("saturator_x3_mono"),
+                LSP_LADSPA_URI("saturator_mono"),
+                LSP_CLAP_URI("saturator_mono"),
+                LSP_GST_UID("saturator_mono"),
             },
             LSP_PLUGINS_SATURATOR_VERSION,
             plugin_classes,
             clap_features_mono,
             E_DUMP_STATE,
-            saturator_x3_mono_ports,
-            "plugins/effects/saturator/plugin.xml",
+            saturator_mono_ports,
+            "plugins/effects/saturator/mono_stereo.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
         };
 
-        const plugin_t saturator_x3_stereo =
+        const plugin_t saturator_stereo =
         {
-            "Sättigungssensor x3 Stereo",
-            "Saturator x3 Stereo",
-            "Saturator x3 Stereo",
-            "ST3S",
+            "Sättigungssensor Stereo",
+            "Saturator Stereo",
+            "Saturator Stereo",
+            "STS",
             &developers::s_tronci,
-            "saturator_x3_stereo",
+            "saturator_stereo",
             {
-                LSP_LV2_URI("saturator_x3_stereo"),
-                LSP_LV2UI_URI("saturator_x3_stereo"),
-                "yyyy",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st3s    yyyy"),
-                LSP_VST3UI_UID("st3s    yyyy"),
-                2,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x3_stereo"),
-                LSP_CLAP_URI("saturator_x3_stereo"),
-                LSP_GST_UID("saturator_x3_stereo"),
-            },
-            LSP_PLUGINS_SATURATOR_VERSION,
-            plugin_classes,
-            clap_features_stereo,
-            E_DUMP_STATE,
-            saturator_x3_stereo_ports,
-            "plugins/effects/saturator/plugin.xml",
-            NULL,
-            stereo_plugin_port_groups,
-            &saturator_bundle
-        };
-
-        const plugin_t saturator_x8_mono =
-        {
-            "Sättigungssensor x8 Mono",
-            "Saturator x8 Mono",
-            "Saturator x8 Mono",
-            "ST8M",
-            &developers::s_tronci,
-            "saturator_x8_mono",
-            {
-                LSP_LV2_URI("saturator_x8_mono"),
-                LSP_LV2UI_URI("saturator_x8_mono"),
+                LSP_LV2_URI("saturator_stereo"),
+                LSP_LV2UI_URI("saturator_stereo"),
                 "xxxx",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st8m    xxxx"),
-                LSP_VST3UI_UID("st8m    xxxx"),
+                LSP_VST3_UID("sts    xxxx"),
+                LSP_VST3UI_UID("sts    xxxx"),
                 1,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x8_mono"),
-                LSP_CLAP_URI("saturator_x8_mono"),
-                LSP_GST_UID("saturator_x8_mono"),
-            },
-            LSP_PLUGINS_SATURATOR_VERSION,
-            plugin_classes,
-            clap_features_mono,
-            E_DUMP_STATE,
-            saturator_x8_mono_ports,
-            "plugins/effects/saturator/plugin.xml",
-            NULL,
-            mono_plugin_port_groups,
-            &saturator_bundle
-        };
-
-        const plugin_t saturator_x8_stereo =
-        {
-            "Sättigungssensor x8 Stereo",
-            "Saturator x8 Stereo",
-            "Saturator x8 Stereo",
-            "ST3S",
-            &developers::s_tronci,
-            "saturator_x8_stereo",
-            {
-                LSP_LV2_URI("saturator_x8_stereo"),
-                LSP_LV2UI_URI("saturator_x8_stereo"),
-                "yyyy",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st8s    yyyy"),
-                LSP_VST3UI_UID("st8s    yyyy"),
-                2,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x8_stereo"),
-                LSP_CLAP_URI("saturator_x8_stereo"),
-                LSP_GST_UID("saturator_x8_stereo"),
+                LSP_LADSPA_URI("saturator_stereo"),
+                LSP_CLAP_URI("saturator_stereo"),
+                LSP_GST_UID("saturator_stereo"),
             },
             LSP_PLUGINS_SATURATOR_VERSION,
             plugin_classes,
             clap_features_stereo,
             E_DUMP_STATE,
-            saturator_x8_stereo_ports,
-            "plugins/effects/saturator/plugin.xml",
+            saturator_stereo_ports,
+            "plugins/effects/saturator/mono_stereo.xml",
             NULL,
-            stereo_plugin_port_groups,
+            mono_plugin_port_groups,
             &saturator_bundle
         };
 
-        const plugin_t saturator_x16_mono =
+        const plugin_t saturator_lr =
         {
-            "Sättigungssensor x16 Mono",
-            "Saturator x16 Mono",
-            "Saturator x16 Mono",
-            "ST16M",
+            "Sättigungssensor LR",
+            "Saturator LR",
+            "Saturator LR",
+            "STLR",
             &developers::s_tronci,
-            "saturator_x16_mono",
+            "saturator_lr",
             {
-                LSP_LV2_URI("saturator_x16_mono"),
-                LSP_LV2UI_URI("saturator_x16_mono"),
+                LSP_LV2_URI("saturator_lr"),
+                LSP_LV2UI_URI("saturator_lr"),
                 "xxxx",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st16m    xxxx"),
-                LSP_VST3UI_UID("st16m    xxxx"),
+                LSP_VST3_UID("stlr    xxxx"),
+                LSP_VST3UI_UID("stlr    xxxx"),
                 1,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x16_mono"),
-                LSP_CLAP_URI("saturator_x16_mono"),
-                LSP_GST_UID("saturator_x16_mono"),
+                LSP_LADSPA_URI("saturator_lr"),
+                LSP_CLAP_URI("saturator_lr"),
+                LSP_GST_UID("saturator_lr"),
             },
             LSP_PLUGINS_SATURATOR_VERSION,
             plugin_classes,
-            clap_features_mono,
+            clap_features_lr,
             E_DUMP_STATE,
-            saturator_x16_mono_ports,
-            "plugins/effects/saturator/plugin.xml",
+            saturator_lr_ports,
+            "plugins/effects/saturator/lr.xml",
             NULL,
             mono_plugin_port_groups,
             &saturator_bundle
         };
 
-        const plugin_t saturator_x16_stereo =
-        {
-            "Sättigungssensor x16 Stereo",
-            "Saturator x16 Stereo",
-            "Saturator x16 Stereo",
-            "ST16S",
-            &developers::s_tronci,
-            "saturator_x16_stereo",
-            {
-                LSP_LV2_URI("saturator_x16_stereo"),
-                LSP_LV2UI_URI("saturator_x16_stereo"),
-                "yyyy",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st16s    yyyy"),
-                LSP_VST3UI_UID("st16s    yyyy"),
-                2,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x16_stereo"),
-                LSP_CLAP_URI("saturator_x16_stereo"),
-                LSP_GST_UID("saturator_x16_stereo"),
-            },
-            LSP_PLUGINS_SATURATOR_VERSION,
-            plugin_classes,
-            clap_features_stereo,
-            E_DUMP_STATE,
-            saturator_x16_stereo_ports,
-            "plugins/effects/saturator/plugin.xml",
-            NULL,
-            stereo_plugin_port_groups,
-            &saturator_bundle
-        };
-
-        const plugin_t saturator_x32_mono =
-        {
-            "Sättigungssensor x32 Mono",
-            "Saturator x32 Mono",
-            "Saturator x32 Mono",
-            "ST32M",
-            &developers::s_tronci,
-            "saturator_x32_mono",
-            {
-                LSP_LV2_URI("saturator_x32_mono"),
-                LSP_LV2UI_URI("saturator_x32_mono"),
-                "xxxx",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st32m    xxxx"),
-                LSP_VST3UI_UID("st32m    xxxx"),
-                1,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x32_mono"),
-                LSP_CLAP_URI("saturator_x32_mono"),
-                LSP_GST_UID("saturator_x32_mono"),
-            },
-            LSP_PLUGINS_SATURATOR_VERSION,
-            plugin_classes,
-            clap_features_mono,
-            E_DUMP_STATE,
-            saturator_x32_mono_ports,
-            "plugins/effects/saturator/plugin.xml",
-            NULL,
-            mono_plugin_port_groups,
-            &saturator_bundle
-        };
-
-        const plugin_t saturator_x32_stereo =
-        {
-            "Sättigungssensor x32 Stereo",
-            "Saturator x32 Stereo",
-            "Saturator x32 Stereo",
-            "ST16S",
-            &developers::s_tronci,
-            "saturator_x32_stereo",
-            {
-                LSP_LV2_URI("saturator_x32_stereo"),
-                LSP_LV2UI_URI("saturator_x32_stereo"),
-                "yyyy",         // TODO: fill valid VST2 ID (4 letters/digits)
-                LSP_VST3_UID("st32s    yyyy"),
-                LSP_VST3UI_UID("st32s    yyyy"),
-                2,              // TODO: fill valid LADSPA identifier (positive decimal integer)
-                LSP_LADSPA_URI("saturator_x32_stereo"),
-                LSP_CLAP_URI("saturator_x32_stereo"),
-                LSP_GST_UID("saturator_x32_stereo"),
-            },
-            LSP_PLUGINS_SATURATOR_VERSION,
-            plugin_classes,
-            clap_features_stereo,
-            E_DUMP_STATE,
-            saturator_x32_stereo_ports,
-            "plugins/effects/saturator/plugin.xml",
-            NULL,
-            stereo_plugin_port_groups,
-            &saturator_bundle
-        };
     } /* namespace meta */
 } /* namespace lsp */
-
-
-
