@@ -224,7 +224,13 @@ namespace lsp
         #define COMMON_CONTROLS(id, label, alias) \
             COMBO("ov" id, "Oversampler Mode" label, "Ov. Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
             AMP_GAIN_RANGE("ge" id, "Pre gain" label, "Pre gain" alias, saturator::PRE_GAIN_DFL, saturator::PRE_GAIN_MIN, saturator::PRE_GAIN_MAX), \
-            AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX)
+            AMP_GAIN_RANGE("pbs" id, "Pre Bass" label, "Pre Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("pmd" id, "Pre Mid" label, "Pre Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("ptb" id, "Pre Treble" label, "Pre Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX), \
+            AMP_GAIN_RANGE("sbs" id, "Post Bass" label, "Post Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("smd" id, "Post Mid" label, "Post Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            AMP_GAIN_RANGE("stb" id, "Post Treble" label, "Post Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX)
 
         #define COMMON_CONTROLS_MONO        COMMON_CONTROLS("", "", "")
         #define COMMON_CONTROLS_STEREO      COMMON_CONTROLS("", "", "")
@@ -238,8 +244,8 @@ namespace lsp
 
             // Input controls
             BYPASS,
-            COMMON_CONTROLS_MONO,
             STAGE_SELECTOR(sat_stages),
+            COMMON_CONTROLS_MONO,
             STAGE_CONTROLS_MONO,
             STAGE_VISUALOUTS_MONO,
             OPT_STRING("comment", "Comment", 128),
@@ -257,8 +263,8 @@ namespace lsp
 
             // Input controls
             BYPASS,
-            COMMON_CONTROLS_STEREO,
             STAGE_SELECTOR(sat_stages),
+            COMMON_CONTROLS_STEREO,
             STAGE_CONTROLS_STEREO,
             STAGE_VISUALOUTS_STEREO,
             OPT_STRING("comment", "Comment", 128),
@@ -276,8 +282,8 @@ namespace lsp
 
             // Input controls
             BYPASS,
-            COMMON_CONTROLS_LR,
             STAGE_SELECTOR(sat_stages),
+            COMMON_CONTROLS_LR,
             STAGE_CONTROLS_LR,
             STAGE_VISUALOUTS_LR,
             OPT_STRING("comment", "Comment", 128),

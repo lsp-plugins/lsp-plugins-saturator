@@ -39,43 +39,43 @@ namespace lsp
         class saturator: public plug::Module
         {
             protected:
-                enum ch_update_t
-                {
-                    UPD_PRE_EQ          = 1 << 0,
-                    UPD_OVERSAMPLER     = 1 << 1,
-                    UPD_SHAPER          = 1 << 2,
-                    UPD_POST_EQ         = 1 << 3,
-                };
+//                enum ch_update_t
+//                {
+//                    UPD_PRE_STACK       = 1 << 0,
+//                    UPD_OVERSAMPLER     = 1 << 1,
+//                    UPD_STAGES          = 1 << 2,
+//                    UPD_POST_STACK      = 1 << 3,
+//                };
 
-                typedef struct ch_state_stage_t
-                {
-                    float  *vfPV_pre_eq_pGain;
-                    float  *vfPV_pre_eq_pSolo;
-                    float  *vfPV_pre_eq_pMute;
-                    float  *vfPV_pre_eq_pEnable;
-
-                    size_t  nPV_ovs_pMode;
-
-                    float   fPV_shaper_pPreGain;
-                    float   fPV_shaper_pPostGain;
-                    float   fPV_shaper_pSlope;
-                    float   fPV_shaper_pShape;
-                    float   fPV_shaper_pHighLevel;
-                    float   fPV_shaper_pLowLevel;
-                    float   fPV_shaper_pRadius;
-                    float   fPV_shaper_pLevels;
-                    float   fPV_shaper_pCCompanding;
-                    float   fPV_shaper_pQCompanding;
-                    float   fPV_shaper_pBias;
-                    float   fPV_shaper_pDrive;
-                    float   fPV_shaper_pBlend;
-                    size_t  nPV_shaper_pShapingFcn;
-
-                    float  *vfPV_post_eq_pGain;
-                    float  *vfPV_post_eq_pSolo;
-                    float  *vfPV_post_eq_pMute;
-                    float  *vfPV_post_eq_pEnable;
-                } ch_state_stage_t;
+//                typedef struct ch_state_stage_t
+//                {
+//                    float  *vfPV_pre_eq_pGain;
+//                    float  *vfPV_pre_eq_pSolo;
+//                    float  *vfPV_pre_eq_pMute;
+//                    float  *vfPV_pre_eq_pEnable;
+//
+//                    size_t  nPV_ovs_pMode;
+//
+//                    float   fPV_shaper_pPreGain;
+//                    float   fPV_shaper_pPostGain;
+//                    float   fPV_shaper_pSlope;
+//                    float   fPV_shaper_pShape;
+//                    float   fPV_shaper_pHighLevel;
+//                    float   fPV_shaper_pLowLevel;
+//                    float   fPV_shaper_pRadius;
+//                    float   fPV_shaper_pLevels;
+//                    float   fPV_shaper_pCCompanding;
+//                    float   fPV_shaper_pQCompanding;
+//                    float   fPV_shaper_pBias;
+//                    float   fPV_shaper_pDrive;
+//                    float   fPV_shaper_pBlend;
+//                    size_t  nPV_shaper_pShapingFcn;
+//
+//                    float  *vfPV_post_eq_pGain;
+//                    float  *vfPV_post_eq_pSolo;
+//                    float  *vfPV_post_eq_pMute;
+//                    float  *vfPV_post_eq_pEnable;
+//                } ch_state_stage_t;
 
                 // Same as Graph Equalizer
                 typedef struct eq_band_t
@@ -83,13 +83,13 @@ namespace lsp
                     dspu::filter_params_t sOldFP;                   // Old filter parameters
                     dspu::filter_params_t sFP;                      // Filter parameters
 
-                    bool                    bHasSolo;               // Whether it has solo
-                    size_t                  nSoloBand;              // The number of the solo band
-
-                    plug::IPort            *pGain;                  // Gain port
-                    plug::IPort            *pSolo;                  // Solo port
-                    plug::IPort            *pMute;                  // Mute port
-                    plug::IPort            *pEnable;                // Enable port
+//                    bool                    bHasSolo;               // Whether it has solo
+//                    size_t                  nSoloBand;              // The number of the solo band
+//
+//                    plug::IPort            *pGain;                  // Gain port
+//                    plug::IPort            *pSolo;                  // Solo port
+//                    plug::IPort            *pMute;                  // Mute port
+//                    plug::IPort            *pEnable;                // Enable port
                 } eq_band_t;
 
                 typedef struct oversampler_t
@@ -101,14 +101,17 @@ namespace lsp
                     size_t                  nOverSampleRate;        // Oversampled Rate
 
                     plug::IPort            *pMode;                  // Oversampler mode
+
+                    size_t                  nPV_pMode;
+                    bool                    bRecompute;
                 } oversampler_t;
 
                 typedef struct shaper_t
                 {
                     dspu::Shaper            sShaper;                // The shaper
 
-                    float                   fPreGain;               // Pre Gain
-                    float                   fPostGain;              // Post Gain
+//                    float                   fPreGain;               // Pre Gain
+//                    float                   fPostGain;              // Post Gain
                     float                   fSlope;                 // Slope (for sinusoidal saturator)
                     float                   fShape;                 // Shape (for many saturators)
                     float                   fHighLevel;             // High Level (for asymmetric saturators)
@@ -122,8 +125,8 @@ namespace lsp
                     float                   fBlend;                 // Blend (for TAP)
                     dspu::sh_function_t     enShapingFcn;           // Shaping Function
 
-                    plug::IPort            *pPreGain;               // Pre Gain
-                    plug::IPort            *pPostGain;              // Post Gain
+//                    plug::IPort            *pPreGain;               // Pre Gain
+//                    plug::IPort            *pPostGain;              // Post Gain
                     plug::IPort            *pSlope;                 // Slope (for sinusoidal saturator)
                     plug::IPort            *pShape;                 // Shape (for many saturators)
                     plug::IPort            *pHighLevel;             // High Level (for asymmetric saturators)
@@ -136,6 +139,22 @@ namespace lsp
                     plug::IPort            *pDrive;                 // Drive (for TAP)
                     plug::IPort            *pBlend;                 // Blend (for TAP)
                     plug::IPort            *pShapingFcn;            // Shaping Function
+
+//                    float                   fPV_pPreGain;
+//                    float                   fPV_pPostGain;
+                    float                   fPV_pSlope;
+                    float                   fPV_pShape;
+                    float                   fPV_pHighLevel;
+                    float                   fPV_pLowLevel;
+                    float                   fPV_pRadius;
+                    float                   fPV_pLevels;
+                    float                   fPV_pCCompanding;
+                    float                   fPV_pQCompanding;
+                    float                   fPV_pBias;
+                    float                   fPV_pDrive;
+                    float                   fPV_pBlend;
+                    size_t                  nPV_pShapingFcn;
+                    bool                    bRecompute;
                 } shaper_t;
 
                 typedef struct tone_stack_t
@@ -145,6 +164,19 @@ namespace lsp
                                                                     // We have TONE_STACK_BANDS bands, plus a first low pass with cutoff min(20 kHz, sample_rate / 2)
                                                                     // sample_rate here is the base rate, not the upsampled one.
                     eq_band_t              *vBands;
+
+                    float                   fBass;
+                    float                   fMid;
+                    float                   fTreble;
+
+                    plug::IPort            *pBass;
+                    plug::IPort            *pMid;
+                    plug::IPort            *pTreble;
+
+                    float                   fPV_pBass;
+                    float                   fPV_pMid;
+                    float                   fPV_pTreble;
+                    float                   bRecompute;
                 } tone_stack_t;
 
                 typedef struct stage_t
@@ -153,10 +185,13 @@ namespace lsp
                     float                   fGain;                  // Gain of the current stage
                     tone_stack_t            sToneStack;             // Tone Stack
                     shaper_t                sShaper;                // Shaper
+                    bool                    bMeshSync;
 
                     plug::IPort            *pBypass;                // Bypass
                     plug::IPort            *pGain;                  // Gain port
+                    plug::IPort            *pMesh;
 
+                    float                   fPV_pGain;
                 } stage_t;
 
                 typedef struct channel_t
@@ -166,17 +201,41 @@ namespace lsp
 
                     // DSP processing modules
                     dspu::Bypass            sBypass;                // Bypass
+
                     tone_stack_t            sPreStack;              // Pre Tone Stack
+                    float                   fPreGain;
+
                     oversampler_t           sOversampler;           // Oversampler
                     stage_t                *vStages;                // Nonlinear Stages
+
                     tone_stack_t            sPostStack;             // Post Tone Stack
+                    float                   fPostGain;
 
                     // Input ports
                     plug::IPort            *pIn;                    // Input port
                     plug::IPort            *pOut;                   // Output port
 
-                    // Output ports
-                    // TODO: Add ports
+                    plug::IPort            *pPreGain;
+                    plug::IPort            *pPreBass;
+                    plug::IPort            *pPreMid;
+                    plug::IPort            *pPreTreble;
+
+                    plug::IPort            *pPostGain;
+                    plug::IPort            *pPostBass;
+                    plug::IPort            *pPostMid;
+                    plug::IPort            *pPostTreble;
+
+                    float                   fPV_pPreGain;
+                    float                   fPV_pPreBass;
+                    float                   fPV_pPreMid;
+                    float                   fPV_pPreTreble;
+                    bool                    bRecomputePre;
+
+                    float                   fPV_pPostGain;
+                    float                   fPV_pPostBass;
+                    float                   fPV_pPostMid;
+                    float                   fPV_pPostTreble;
+                    float                   bRecomputePost;
                 } channel_t;
 
             protected:
@@ -191,6 +250,7 @@ namespace lsp
                 float                      *VOSStageAccBuffer;      // Temporary buffer where we accumulate the results of the saturation stages.
 
                 plug::IPort                *pBypass;                // Bypass
+                plug::IPort                *pStageSel;
                 plug::IPort                *pComment;               // Comment
 
 //                const float                *vFreqs;                 // Pointer to the Frequency vector in metadata, a constant.
@@ -198,36 +258,36 @@ namespace lsp
                 uint8_t                    *pData;                  // Allocated data
 
             protected:
-                void                do_destroy();
+                void                            do_destroy();
 
             protected:
-                static dspu::over_mode_t    get_oversampler_mode(size_t portValue);
-                static dspu::sh_function_t  get_shaping_function(size_t portValue);
+                static dspu::over_mode_t        get_oversampler_mode(size_t portValue);
+                static dspu::sh_function_t      get_shaping_function(size_t portValue);
 
             protected:
-//                void                init_state_stage(channel_t *c);
-                void                commit_staged_state_change(channel_t *c);
-                void                setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
-                void                process_stage(stage_t *stage, float *dst, const float *src, size_t count);
-                void                process_stages(channel_t *c, float *dst, const float *src, size_t count);
+                void                            init_state_stage(channel_t *c);
+                void                            commit_staged_state_change(channel_t *c);
+                void                            setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
+                void                            process_stage(stage_t *stage, float *dst, const float *src, size_t count);
+                void                            process_stages(channel_t *c, float *dst, const float *src, size_t count);
 
             public:
-                explicit saturator(const meta::plugin_t *meta, size_t bands, const float *vfreqs);
+                virtual void                    update_sample_rate(long sr) override;
+                virtual void                    update_settings() override;
+                virtual void                    process(size_t samples) override;
+                virtual void                    dump(dspu::IStateDumper *v) const override;
+
+            public:
+                virtual void                    init(plug::IWrapper *wrapper, plug::IPort **ports) override;
+                virtual void                    destroy() override;
+
+                explicit saturator(const meta::plugin_t *meta, size_t bands, size_t stages);
                 saturator (const saturator &) = delete;
                 saturator (saturator &&) = delete;
                 virtual ~saturator() override;
 
                 saturator & operator = (const saturator &) = delete;
                 saturator & operator = (saturator &&) = delete;
-
-                virtual void        init(plug::IWrapper *wrapper, plug::IPort **ports) override;
-                virtual void        destroy() override;
-
-            public:
-                virtual void        update_sample_rate(long sr) override;
-                virtual void        update_settings() override;
-                virtual void        process(size_t samples) override;
-                virtual void        dump(dspu::IStateDumper *v) const override;
         };
 
     } /* namespace plugins */

@@ -36,7 +36,7 @@ namespace lsp
             static constexpr size_t         MAX_STAGES          = 5;
             static constexpr size_t         MAX_TONE_BANDS      = 3;
 
-            static constexpr size_t         MESH_SIZE   = 280;
+            static constexpr size_t         MESH_SIZE           = 280;
 
             static constexpr float          STAGE_GAIN_MIN      = GAIN_AMP_M_36_DB;
             static constexpr float          STAGE_GAIN_MAX      = GAIN_AMP_P_36_DB;
