@@ -25,6 +25,7 @@
 #include <lsp-plug.in/dsp-units/units.h>
 #include <lsp-plug.in/plug-fw/meta/func.h>
 #include <lsp-plug.in/shared/debug.h>
+#include <lsp-plug.in/stdlib/math.h>
 
 #include <private/plugins/saturator.h>
 
@@ -33,8 +34,14 @@ namespace lsp
     namespace plugins
     {
         /* The size of temporary buffer for audio processing */
-        static constexpr size_t BUFFER_SIZE             = 0x200;
-        static constexpr size_t STAGE_BUFFER_SIZE       = 0x200;
+        static constexpr size_t BUFFER_SIZE                 = 0x200;
+        static constexpr size_t STAGE_BUFFER_SIZE           = 0x200;
+
+        // Tone stack limits
+        static constexpr float DC_BLOCK_FREQUENCY           = 5.0f;
+        static constexpr float MIN_BAND_FREQUENCY           = 20.0f;
+        static constexpr float MAX_ANTI_ALIASING_FREQUENCY  = 20000.0f;
+        static constexpr float NYQUIST_SCALER               = 5.0f / 6.0f;
 
         //---------------------------------------------------------------------
         // Plugin factory
@@ -206,10 +213,6 @@ namespace lsp
                 c->sPostStack.sEQ.construct();
                 c->sPostStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
 
-
-
-
-
 //                c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
 //                c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
 //                c->sStateStage.vfPV_pre_eq_pMute        = advance_ptr_bytes<float>(ptr, szof_stage_array);
@@ -351,22 +354,31 @@ namespace lsp
         {
             nSampleRate = sr;
 
+            calculate_tone_stack_bands(&sBands, nSampleRate);
+
             // Update sample rate for the bypass processors
             for (size_t i=0; i<nChannels; ++i)
             {
                 channel_t *c = &vChannels[i];
                 c->sBypass.init(nSampleRate);
+
                 c->sPreStack.sEQ.set_sample_rate(nSampleRate);
+                configure_tone_stack(&c->sPreStack, &sBands);
+
                 c->sOversampler.nOverSampleRate = c->sOversampler.nOversampling * nSampleRate;
 
                 for (size_t s = 0; s>nStages; ++s)
                 {
-                    c->vStages[s].sBypass.init(nSampleRate);
-                    c->vStages[s].sToneStack.sEQ.set_sample_rate(nSampleRate);
-                    c->vStages[s].sShaper.sShaper.set_sample_rate(nSampleRate);
+                    c->vStages[s].sBypass.init(c->sOversampler.nOverSampleRate);
+
+                    c->vStages[s].sToneStack.sEQ.set_sample_rate(c->sOversampler.nOverSampleRate);
+                    configure_tone_stack(&c->vStages[s].sToneStack, &sBands);
+
+                    c->vStages[s].sShaper.sShaper.set_sample_rate(c->sOversampler.nOverSampleRate);
                 }
 
                 c->sPostStack.sEQ.set_sample_rate(nSampleRate);
+                configure_tone_stack(&c->sPostStack, &sBands);
             }
         }
 
@@ -494,7 +506,7 @@ namespace lsp
 
             if (c->bRecomputePre)
             {
-                // TODO: handle the filters
+                configure_tone_stack(&c->sPreStack, &sBands);
                 c->bRecomputePre = false;
             }
 
@@ -502,7 +514,7 @@ namespace lsp
 
             if (c->bRecomputePost)
             {
-                // TODO: handle the filters
+                configure_tone_stack(&c->sPostStack, &sBands);
                 c->bRecomputePost = false;
             }
 
@@ -522,15 +534,15 @@ namespace lsp
 
             for (size_t s=0; s<nStages; ++s)
             {
-                c->vStages[s].fGain = c->vStages[s].fPV_pGain;
+                stage_t* stage = &c->vStages[s];
 
-                if (c->vStages[s].sToneStack.bRecompute)
+                stage->fGain = stage->fPV_pGain;
+
+                if (stage->sToneStack.bRecompute)
                 {
-                    // TODO: handle the filters
+                    configure_tone_stack(&stage->sToneStack, &sBands);
                     c->vStages[s].sToneStack.bRecompute = false;
                 }
-
-                stage_t* stage = &c->vStages[s];
 
                 // TODO:  Do these selectively with a boolean update flag?
                 if  (stage->sShaper.bRecompute)
@@ -576,51 +588,105 @@ namespace lsp
             }
         }
 
-        void saturator::setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band)
+        void saturator::calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate)
         {
-            // TODO: As we add more settings for the filter bands we will need to to change this,
+            float nyquist           = samplerate / 2;
+            float lowest            = MIN_BAND_FREQUENCY;
+            float highest           = lsp::lsp_min(MAX_ANTI_ALIASING_FREQUENCY, NYQUIST_SCALER * nyquist);
 
-            fp->nSlope      = 1;
-            fp->fQuality    = 0.0f;
-            fp->fGain       = gain;
+            float exponent          = 1.0f / nBands;
+            float band_finder       = powf(highest / lowest, exponent);
 
-            if (band == 0)
-            {
-                fp->nType   = dspu::FLT_DR_APO_LOPASS;
-                fp->fFreq   = sqrtf(vFreqs[0] * vFreqs[1]);
-                fp->fFreq2  = fp->fFreq;
-            }
-            else if (band == (nBands - 1))
-            {
-                fp->nType   = dspu::FLT_DR_APO_HIPASS;
-                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
-                fp->fFreq2  = fp->fFreq;
-            }
-            else
-            {
-                fp->nType   = dspu::FLT_DR_APO_BANDPASS;
-                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
-                fp->fFreq2  = sqrtf(vFreqs[band] * vFreqs[band+1]);
-            }
+            bands->fBassBandLow     = lsp::lsp_min(DC_BLOCK_FREQUENCY, lowest);
+            bands->fBassBandHigh    = bands->fBassBandLow * band_finder;
 
-            if (has_solo && (band != solo_band))
-            {
-                fp->nType   = dspu::FLT_NONE;
-                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
-            }
+            bands->fMidBandLow      = bands->fBassBandHigh;
+            bands->fMidBandHigh     = bands->fMidBandLow * band_finder;
 
-            if (mute >= 0.5f)
-            {
-                fp->nType   = dspu::FLT_NONE;
-                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
-            }
-
-            if (enable < 0.5f)
-            {
-                fp->nType   = dspu::FLT_NONE;
-                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
-            }
+            bands->fTrebleBandLow   = bands->fMidBandHigh;
+            bands->fTrebleBandHigh  = highest;
         }
+
+        void saturator::configure_tone_stack(tone_stack_t *stack, const tone_stack_bands_t *bands)
+        {
+            dspu::filter_params_t *fp;
+
+            eq_band_t *bass                 = &stack->vBands[0];
+            fp                              = &bass->sFP;
+            fp->nSlope                      = 1;
+            fp->fQuality                    = 0.0f;
+            fp->fGain                       = stack->fBass;
+            fp->nType                       = dspu::FLT_DR_APO_BANDPASS;
+            fp->fFreq                       = bands->fBassBandLow;
+            fp->fFreq2                      = bands->fTrebleBandHigh;
+            stack->sEQ.set_params(0, fp);
+
+            eq_band_t *mid                  = &stack->vBands[1];
+            fp                              = &mid->sFP;
+            fp->nSlope                      = 1;
+            fp->fQuality                    = 0.0f;
+            fp->fGain                       = stack->fMid;
+            fp->nType                       = dspu::FLT_DR_APO_BANDPASS;
+            fp->fFreq                       = bands->fMidBandLow;
+            fp->fFreq2                      = bands->fMidBandHigh;
+            stack->sEQ.set_params(1, fp);
+
+            eq_band_t *treble               = &stack->vBands[1];
+            fp                              = &treble->sFP;
+            fp->nSlope                      = 1;
+            fp->fQuality                    = 0.0f;
+            fp->fGain                       = stack->fTreble;
+            fp->nType                       = dspu::FLT_DR_APO_BANDPASS;
+            fp->fFreq                       = bands->fTrebleBandLow;
+            fp->fFreq2                      = bands->fTrebleBandHigh;
+            stack->sEQ.set_params(2, fp);
+        }
+
+//        void saturator::setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band)
+//        {
+//            // TODO: As we add more settings for the filter bands we will need to to change this,
+//
+//            fp->nSlope      = 1;
+//            fp->fQuality    = 0.0f;
+//            fp->fGain       = gain;
+//
+//            if (band == 0)
+//            {
+//                fp->nType   = dspu::FLT_DR_APO_LOPASS;
+//                fp->fFreq   = sqrtf(vFreqs[0] * vFreqs[1]);
+//                fp->fFreq2  = fp->fFreq;
+//            }
+//            else if (band == (nBands - 1))
+//            {
+//                fp->nType   = dspu::FLT_DR_APO_HIPASS;
+//                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
+//                fp->fFreq2  = fp->fFreq;
+//            }
+//            else
+//            {
+//                fp->nType   = dspu::FLT_DR_APO_BANDPASS;
+//                fp->fFreq   = sqrtf(vFreqs[band-1] * vFreqs[band]);
+//                fp->fFreq2  = sqrtf(vFreqs[band] * vFreqs[band+1]);
+//            }
+//
+//            if (has_solo && (band != solo_band))
+//            {
+//                fp->nType   = dspu::FLT_NONE;
+//                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+//            }
+//
+//            if (mute >= 0.5f)
+//            {
+//                fp->nType   = dspu::FLT_NONE;
+//                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+//            }
+//
+//            if (enable < 0.5f)
+//            {
+//                fp->nType   = dspu::FLT_NONE;
+//                fp->fGain   = meta::saturator::BAND_GAIN_MIN;
+//            }
+//        }
 
         void saturator::process_stage(stage_t *stage, float *dst, const float *src, size_t count)
         {
@@ -921,38 +987,39 @@ namespace lsp
 
         void saturator::dump(dspu::IStateDumper *v) const
         {
-            plug::Module::dump(v);
-
-            // It is very useful to dump plugin state for debug purposes
-            v->write("nChannels", nChannels);
-            v->begin_array("vChannels", vChannels, nChannels);
-            for (size_t i=0; i<nChannels; ++i)
-            {
-                channel_t *c            = &vChannels[i];
-
-                v->begin_object(c, sizeof(channel_t));
-                {
-                    v->write_object("sBypass", &c->sBypass);
-                    v->write_object("sPreEQ", &c->sPreEQ);
-                    v->write_object("sOversampler", &c->sOversampler);
-                    v->write_object("sShaper", &c->sShaper);
-                    v->write_object("sPostEQ", &c->sPostEQ);
-
-                    // TODO: Dump the various parameters structures
-
-                    v->write("pIn", c->pIn);
-                    v->write("pOut", c->pOut);
-                }
-                v->end_object();
-            }
-            v->end_array();
-
-            v->write("vBuffer", vBuffer);
-            v->write("vOSBuffer", vOSBuffer);
-
-            v->write("pBypass", pBypass);
-
-            v->write("pData", pData);
+            // TODO: Implement
+//            plug::Module::dump(v);
+//
+//            // It is very useful to dump plugin state for debug purposes
+//            v->write("nChannels", nChannels);
+//            v->begin_array("vChannels", vChannels, nChannels);
+//            for (size_t i=0; i<nChannels; ++i)
+//            {
+//                channel_t *c            = &vChannels[i];
+//
+//                v->begin_object(c, sizeof(channel_t));
+//                {
+//                    v->write_object("sBypass", &c->sBypass);
+//                    v->write_object("sPreEQ", &c->sPreEQ);
+//                    v->write_object("sOversampler", &c->sOversampler);
+//                    v->write_object("sShaper", &c->sShaper);
+//                    v->write_object("sPostEQ", &c->sPostEQ);
+//
+//                    // TODO: Dump the various parameters structures
+//
+//                    v->write("pIn", c->pIn);
+//                    v->write("pOut", c->pOut);
+//                }
+//                v->end_object();
+//            }
+//            v->end_array();
+//
+//            v->write("vBuffer", vBuffer);
+//            v->write("vOSBuffer", vOSBuffer);
+//
+//            v->write("pBypass", pBypass);
+//
+//            v->write("pData", pData);
         }
 
     } /* namespace plugins */

@@ -157,6 +157,18 @@ namespace lsp
                     bool                    bRecompute;
                 } shaper_t;
 
+                typedef struct tone_stack_bands_t
+                {
+                    float                   fBassBandLow;
+                    float                   fBassBandHigh;
+
+                    float                   fMidBandLow;
+                    float                   fMidBandHigh;
+
+                    float                   fTrebleBandLow;
+                    float                   fTrebleBandHigh;
+                } tone_stack_bands_t;
+
                 typedef struct tone_stack_t
                 {
                     dspu::Equalizer         sEQ;                    // Tone control - The first filter is reserved as anti-aliasing lowpass
@@ -244,6 +256,7 @@ namespace lsp
                 size_t                      nStages;                // Number of nonlinear stages in each channel
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
+                tone_stack_bands_t          sBands;
                 float                      *vBuffer;                // Temporary buffer for audio processing
                 float                      *vOSBuffer;              // Temporary buffer for oversampled audio processing
                 float                      *vOSStageBuffer;         // Temporary buffer for Saturation stage processing. It contains oversampled data.
@@ -267,7 +280,9 @@ namespace lsp
             protected:
                 void                            init_state_stage(channel_t *c);
                 void                            commit_staged_state_change(channel_t *c);
-                void                            setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
+//                void                            setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
+                void                            calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate);
+                void                            configure_tone_stack(tone_stack_t *stack, const tone_stack_bands_t *bands);
                 void                            process_stage(stage_t *stage, float *dst, const float *src, size_t count);
                 void                            process_stages(channel_t *c, float *dst, const float *src, size_t count);
 
