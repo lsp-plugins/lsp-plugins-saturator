@@ -34,9 +34,49 @@ namespace lsp
         typedef struct saturator
         {
             static constexpr size_t         MAX_STAGES          = 5;
-            static constexpr size_t         MAX_TONE_BANDS      = 3;
+
+            // MAX_TONE_BANDS *MUST* reflect the number of bands defined below
+            static constexpr size_t         MAX_TONE_BANDS      = 6;
 
             static constexpr size_t         MESH_SIZE           = 280;
+
+            // 6 bands in audible range, equally spaced (logarithmically)
+
+            static constexpr float          SUB_BASS_MIN        = 20.0f;
+            static constexpr float          SUB_BASS_MAX        = 63.0f;
+            static constexpr float          SUB_BASS_DFL        = 36.0f;
+            static constexpr float          SUB_BASS_STEP       = 1.0f;
+            static constexpr float          ENABLE_SUB_BASS     = 0.0f;
+
+            static constexpr float          BASS_MIN            = 63.0f;
+            static constexpr float          BASS_MAX            = 200.0f;
+            static constexpr float          BASS_DFL            = 112.0f;
+            static constexpr float          BASS_STEP           = 1.0f;
+            static constexpr float          ENABLE_BASS         = 0.0f;
+
+            static constexpr float          MID_MIN             = 200.0f;
+            static constexpr float          MID_MAX             = 632.0f;
+            static constexpr float          MID_DFL             = 356.0f;
+            static constexpr float          MID_STEP            = 1.0f;
+            static constexpr float          ENABLE_MID          = 1.0f;
+
+            static constexpr float          HIGH_MIN            = 632.0f;
+            static constexpr float          HIGH_MAX            = 2000.0f;
+            static constexpr float          HIGH_DFL            = 1125.0f;
+            static constexpr float          HIGH_STEP           = 1.0f;
+            static constexpr float          ENABLE_HIGH         = 1.0f;
+
+            static constexpr float          PRESENCE_MIN        = 2000.0f;
+            static constexpr float          PRESENCE_MAX        = 6325.0f;
+            static constexpr float          PRESENCE_DFL        = 3557.0f;
+            static constexpr float          PRESENCE_STEP       = 1.0f;
+            static constexpr float          ENABLE_PRESENCE     = 0.0f;
+
+            static constexpr float          AIR_MIN             = 6325.0f;
+            static constexpr float          AIR_MAX             = 20000.0f;
+            static constexpr float          AIR_DFL             = 11247.0f;
+            static constexpr float          AIR_STEP            = 1.0f;
+            static constexpr float          ENABLE_AIR          = 0.0f;
 
             static constexpr float          STAGE_GAIN_MIN      = GAIN_AMP_M_36_DB;
             static constexpr float          STAGE_GAIN_MAX      = GAIN_AMP_P_36_DB;

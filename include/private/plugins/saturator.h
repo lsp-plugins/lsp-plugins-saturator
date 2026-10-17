@@ -78,19 +78,19 @@ namespace lsp
 //                } ch_state_stage_t;
 
                 // Same as Graph Equalizer
-                typedef struct eq_band_t
-                {
-                    dspu::filter_params_t sOldFP;                   // Old filter parameters
-                    dspu::filter_params_t sFP;                      // Filter parameters
-
-//                    bool                    bHasSolo;               // Whether it has solo
-//                    size_t                  nSoloBand;              // The number of the solo band
+//                typedef struct eq_band_t
+//                {
+//                    dspu::filter_params_t sOldFP;                   // Old filter parameters
+//                    dspu::filter_params_t sFP;                      // Filter parameters
 //
-//                    plug::IPort            *pGain;                  // Gain port
-//                    plug::IPort            *pSolo;                  // Solo port
-//                    plug::IPort            *pMute;                  // Mute port
-//                    plug::IPort            *pEnable;                // Enable port
-                } eq_band_t;
+////                    bool                    bHasSolo;               // Whether it has solo
+////                    size_t                  nSoloBand;              // The number of the solo band
+////
+////                    plug::IPort            *pGain;                  // Gain port
+////                    plug::IPort            *pSolo;                  // Solo port
+////                    plug::IPort            *pMute;                  // Mute port
+////                    plug::IPort            *pEnable;                // Enable port
+//                } eq_band_t;
 
                 typedef struct oversampler_t
                 {
@@ -105,6 +105,22 @@ namespace lsp
                     size_t                  nPV_pMode;
                     bool                    bRecompute;
                 } oversampler_t;
+
+                enum shaper_update_t
+                {
+                    UPD_SLOPE           = 1 << 0,
+                    UPD_SHAPE           = 1 << 1,
+                    UPD_HIGH_LEVEL      = 1 << 2,
+                    UPD_LOW_LEVEL       = 1 << 3,
+                    UPD_RADIUS          = 1 << 4,
+                    UPD_LEVELS          = 1 << 5,
+                    UPD_Q_COMPANDING    = 1 << 6,
+                    UPD_C_COMPANDING    = 1 << 7,
+                    UPD_BIAS            = 1 << 8,
+                    UPD_DRIVE           = 1 << 9,
+                    UPD_BLEND           = 1 << 10,
+                    UPD_SHAPING_FCN     = 1 << 11,
+                };
 
                 typedef struct shaper_t
                 {
@@ -154,41 +170,62 @@ namespace lsp
                     float                   fPV_pDrive;
                     float                   fPV_pBlend;
                     size_t                  nPV_pShapingFcn;
-                    bool                    bRecompute;
+//                    bool                    bRecompute;
+                    size_t                  nUpdate;
                 } shaper_t;
 
-                typedef struct tone_stack_bands_t
+//                typedef struct tone_stack_bands_t
+//                {
+//                    float                   fBassBandLow;
+//                    float                   fBassBandHigh;
+//
+//                    float                   fMidBandLow;
+//                    float                   fMidBandHigh;
+//
+//                    float                   fTrebleBandLow;
+//                    float                   fTrebleBandHigh;
+//                } tone_stack_bands_t;
+
+                enum filter_type_t
                 {
-                    float                   fBassBandLow;
-                    float                   fBassBandHigh;
+                    LOSHELF     = dspu::FLT_MT_LRX_LOSHELF,
+                    HISHEKF     = dspu::FLT_MT_LRX_HISHELF,
+                    LADDERPASS  = dspu::FLT_MT_LRX_LADDERPASS,
+                    NONE        = dspu::FLT_NONE,
+                };
 
-                    float                   fMidBandLow;
-                    float                   fMidBandHigh;
+                typedef struct stack_band_t
+                {
+                    float                   fGain;
+                    float                   fCenter;
+                    float                   fLow;
+                    float                   fHigh;
+                    bool                    bEnabled;
 
-                    float                   fTrebleBandLow;
-                    float                   fTrebleBandHigh;
-                } tone_stack_bands_t;
+                    dspu::filter_params_t   sOldFP;                   // Old filter parameters
+                    dspu::filter_params_t   sFP;                      // Filter parameters
+
+                    plug::IPort            *pGain;
+                    plug::IPort            *pCenter;
+                    plug::IPort            *pEnabled;
+
+                    float                   fPV_pGain;
+                    float                   fPV_pCenter;
+                    float                   fPV_pEnabled;
+                    bool                    bRecompute;
+                } stack_band_t;
 
                 typedef struct tone_stack_t
                 {
-                    dspu::Equalizer         sEQ;                    // Tone control - The first filter is reserved as anti-aliasing lowpass
-                                                                    // All bands between 20 Hz and min(20 kHz, sample_rate / 2)
-                                                                    // We have TONE_STACK_BANDS bands, plus a first low pass with cutoff min(20 kHz, sample_rate / 2)
-                                                                    // sample_rate here is the base rate, not the upsampled one.
-                    eq_band_t              *vBands;
+                    dspu::Equalizer         sEQ;
+//                    eq_band_t              *vBands;
 
-                    float                   fBass;
-                    float                   fMid;
-                    float                   fTreble;
-
-                    plug::IPort            *pBass;
-                    plug::IPort            *pMid;
-                    plug::IPort            *pTreble;
-
-                    float                   fPV_pBass;
-                    float                   fPV_pMid;
-                    float                   fPV_pTreble;
-                    float                   bRecompute;
+                    stack_band_t            sSubBass;
+                    stack_band_t            sBass;
+                    stack_band_t            sMid;
+                    stack_band_t            sHigh;
+                    stack_band_t            sPresence;
+                    stack_band_t            sAir;
                 } tone_stack_t;
 
                 typedef struct stage_t
@@ -228,26 +265,26 @@ namespace lsp
                     plug::IPort            *pOut;                   // Output port
 
                     plug::IPort            *pPreGain;
-                    plug::IPort            *pPreBass;
-                    plug::IPort            *pPreMid;
-                    plug::IPort            *pPreTreble;
+//                    plug::IPort            *pPreBass;
+//                    plug::IPort            *pPreMid;
+//                    plug::IPort            *pPreTreble;
 
                     plug::IPort            *pPostGain;
-                    plug::IPort            *pPostBass;
-                    plug::IPort            *pPostMid;
-                    plug::IPort            *pPostTreble;
+//                    plug::IPort            *pPostBass;
+//                    plug::IPort            *pPostMid;
+//                    plug::IPort            *pPostTreble;
 
                     float                   fPV_pPreGain;
-                    float                   fPV_pPreBass;
-                    float                   fPV_pPreMid;
-                    float                   fPV_pPreTreble;
-                    bool                    bRecomputePre;
+//                    float                   fPV_pPreBass;
+//                    float                   fPV_pPreMid;
+//                    float                   fPV_pPreTreble;
+//                    bool                    bRecomputePre;
 
                     float                   fPV_pPostGain;
-                    float                   fPV_pPostBass;
-                    float                   fPV_pPostMid;
-                    float                   fPV_pPostTreble;
-                    float                   bRecomputePost;
+//                    float                   fPV_pPostBass;
+//                    float                   fPV_pPostMid;
+//                    float                   fPV_pPostTreble;
+//                    float                   bRecomputePost;
                 } channel_t;
 
             protected:
@@ -256,7 +293,7 @@ namespace lsp
                 size_t                      nStages;                // Number of nonlinear stages in each channel
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
-                tone_stack_bands_t          sBands;
+//                tone_stack_bands_t          sBands;
                 float                      *vBuffer;                // Temporary buffer for audio processing
                 float                      *vOSBuffer;              // Temporary buffer for oversampled audio processing
                 float                      *vOSStageBuffer;         // Temporary buffer for Saturation stage processing. It contains oversampled data.
@@ -278,11 +315,16 @@ namespace lsp
                 static dspu::sh_function_t      get_shaping_function(size_t portValue);
 
             protected:
+                void                            init_stack_band_state_stage(stack_band_t *band, float center, bool enable);
                 void                            init_state_stage(channel_t *c);
                 void                            commit_staged_state_change(channel_t *c);
+                void                            init_tone_stack(tone_stack_t *stack);
 //                void                            setup_eq_filter(dspu::filter_params_t *fp, size_t band, float gain, bool mute, bool enable, bool has_solo, bool solo_band);
-                void                            calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate);
-                void                            configure_tone_stack(tone_stack_t *stack, const tone_stack_bands_t *bands);
+//                void                            calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate);
+                void                            configure_oversampler(oversampler_t *ovs);
+                void                            configure_stage(stage_t *stage);
+                void                            configure_stack_band(stack_band_t *band, filter_type_t type);
+                void                            configure_tone_stack(tone_stack_t *stack);
                 void                            process_stage(stage_t *stage, float *dst, const float *src, size_t count);
                 void                            process_stages(channel_t *c, float *dst, const float *src, size_t count);
 

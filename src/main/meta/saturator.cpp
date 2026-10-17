@@ -157,12 +157,23 @@ namespace lsp
         #define STAGE_BYPASS(id, label) \
             { "bp" id, "Bypass" label, NULL, U_BOOL, R_BYPASS, 0, F_UPPER | F_LOWER, 0, 1, 0, 0, NULL, NULL, NULL }
 
+        #define BAND_CONTROLS(id, label, alias, limits, dfl) \
+            AMP_GAIN_RANGE("g" id, "Gain" label, "Gain" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            LOG_CONTROL("f", "Center Frequency", "Center Frequency", U_HZ, limits), \
+            SWITCH("e" id, "Enable" label, "On " alias, dfl)
+
+        #define TONE_STACK_CONTROLS(id, label, alias)  \
+            BAND_CONTROLS("s" id, " Sub-Bass" label, " Sub-Bass" alias, saturator::SUB_BASS, saturator::ENABLE_SUB_BASS), \
+            BAND_CONTROLS("b" id, " Bass" label, " Bass" alias, saturator::BASS, saturator::ENABLE_BASS), \
+            BAND_CONTROLS("m" id, " Mid" label, " Mid" alias, saturator::MID, saturator::ENABLE_MID), \
+            BAND_CONTROLS("h" id, " High" label, " High" alias, saturator::HIGH, saturator::ENABLE_HIGH), \
+            BAND_CONTROLS("p" id, " Presence" label, " Presence" alias, saturator::PRESENCE, meta::saturator::ENABLE_PRESENCE), \
+            BAND_CONTROLS("a" id, " Air" label, " Air" alias, saturator::AIR, saturator::ENABLE_AIR)
+
         #define STAGE_CONTROLS(id, label, alias)  \
             STAGE_BYPASS(id, label), \
             AMP_GAIN_RANGE("gn" id, "Gain" label, "Gain" alias, saturator::STAGE_GAIN_DFL, saturator::STAGE_GAIN_MIN, saturator::STAGE_GAIN_MAX), \
-            AMP_GAIN_RANGE("bs" id, "Bass" label, "Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("md" id, "Mid" label, "Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("tb" id, "Treble" label, "Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            TONE_STACK_CONTROLS(id, label, alias), \
             CONTROL("sl" id, "Slope" label, "Slope" alias, U_NONE, saturator::SLOPE), \
             CONTROL("sh" id, "Shape" label, "Shape" alias, U_NONE, saturator::SHAPE), \
             CONTROL("hl" id, "High Level" label, "High Level" alias, U_NONE, saturator::HIGH_LEVEL), \
@@ -224,13 +235,9 @@ namespace lsp
         #define COMMON_CONTROLS(id, label, alias) \
             COMBO("ov" id, "Oversampler Mode" label, "Ov. Mode" alias, saturator::SAT_OVS_DFL, sat_oversampler_mode), \
             AMP_GAIN_RANGE("ge" id, "Pre gain" label, "Pre gain" alias, saturator::PRE_GAIN_DFL, saturator::PRE_GAIN_MIN, saturator::PRE_GAIN_MAX), \
-            AMP_GAIN_RANGE("pbs" id, "Pre Bass" label, "Pre Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("pmd" id, "Pre Mid" label, "Pre Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("ptb" id, "Pre Treble" label, "Pre Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
+            TONE_STACK_CONTROLS("pr", " Pre", " Pre"), \
             AMP_GAIN_RANGE("gt" id, "Post gain" label, "Post gain" alias, saturator::POST_GAIN_DFL, saturator::POST_GAIN_MIN, saturator::POST_GAIN_MAX), \
-            AMP_GAIN_RANGE("sbs" id, "Post Bass" label, "Post Bass" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("smd" id, "Post Mid" label, "Post Mid" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            AMP_GAIN_RANGE("stb" id, "Post Treble" label, "Post Treble" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX)
+            TONE_STACK_CONTROLS("pt", " Post", " Post")
 
         #define COMMON_CONTROLS_MONO        COMMON_CONTROLS("", "", "")
         #define COMMON_CONTROLS_STEREO      COMMON_CONTROLS("", "", "")

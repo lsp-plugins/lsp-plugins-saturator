@@ -114,6 +114,22 @@ namespace lsp
             do_destroy();
         }
 
+        void saturator::init_tone_stack(tone_stack_t *stack)
+        {
+            stack->sSubBass.fLow    = meta::saturator::SUB_BASS_MIN;
+            stack->sSubBass.fHigh   = meta::saturator::SUB_BASS_MAX;
+            stack->sBass.fLow       = meta::saturator::BASS_MIN;
+            stack->sBass.fHigh      = meta::saturator::BASS_MAX;
+            stack->sMid.fLow        = meta::saturator::MID_MIN;
+            stack->sMid.fHigh       = meta::saturator::MID_MAX;
+            stack->sHigh.fLow       = meta::saturator::HIGH_MIN;
+            stack->sHigh.fHigh      = meta::saturator::HIGH_MAX;
+            stack->sPresence.fLow   = meta::saturator::PRESENCE_MIN;
+            stack->sPresence.fHigh  = meta::saturator::PRESENCE_MAX;
+            stack->sAir.fLow        = meta::saturator::AIR_MIN;
+            stack->sAir.fHigh       = meta::saturator::AIR_MAX;
+        }
+
         void saturator::init(plug::IWrapper *wrapper, plug::IPort **ports)
         {
             // Call parent class for initialization
@@ -141,9 +157,9 @@ namespace lsp
              *  Each channel has saturation stages.
              *  Therefore:
              */
-            const size_t szof_eq_bands      = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
-            const size_t szof_ch_eqs        = (2 + nStages) * szof_eq_bands;
-            const size_t szof_eqs           = szof_ch_eqs * nChannels;
+//            const size_t szof_eq_bands      = align_size(sizeof(eq_band_t) * nBands, OPTIMAL_ALIGN);
+//            const size_t szof_ch_eqs        = (2 + nStages) * szof_eq_bands;
+//            const size_t szof_eqs           = szof_ch_eqs * nChannels;
             // We have nStages saturation stages per channel
             const size_t szof_stage_array   = align_size(sizeof(stage_t) * nStages, OPTIMAL_ALIGN);
             const size_t szof_stages        = szof_stage_array * nChannels;
@@ -171,7 +187,7 @@ namespace lsp
             const size_t alloc =
                     szos_bufs +         // All audio buffers
                     szof_channels +     // Top level channel size
-                    szof_eqs +          // Size of all EQ bands
+//                    szof_eqs +          // Size of all EQ bands
                     szof_stages +       // Size of all nonlinear stages
                     szof_tone_stacks;   // Size of all tone stacks
 
@@ -190,7 +206,7 @@ namespace lsp
 
                 c->sBypass.construct();
 
-                c->sPreStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+//                c->sPreStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                 c->sPreStack.sEQ.construct();
                 c->sPreStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
 
@@ -204,12 +220,12 @@ namespace lsp
 
                     c->vStages[s].sShaper.sShaper.construct();
 
-                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+//                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                     c->vStages[s].sToneStack.sEQ.construct();
                     c->vStages[s].sToneStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
                 }
 
-                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
+//                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                 c->sPostStack.sEQ.construct();
                 c->sPostStack.sEQ.init(nBands, meta::saturator::FFT_RANK);
 
@@ -237,6 +253,21 @@ namespace lsp
 
             // Check that allocation did not went out of bounds. There will be an error in log otherwise
             lsp_assert(ptr <= &save[alloc]);
+
+            // Initialize values
+            for (size_t i=0; i<nChannels; ++i)
+            {
+                channel_t *c = &vChannels[i];
+
+                init_tone_stack(&c->sPreStack);
+                init_tone_stack(&c->sPostStack);
+
+                for (size_t s=0; s<nStages; ++s)
+                {
+                    stage_t* stage = &c->vStages[s];
+                    init_tone_stack(&stage->sToneStack);
+                }
+            }
 
             // Bind ports
             lsp_trace("Binding ports");
@@ -266,37 +297,86 @@ namespace lsp
                 BIND_PORT(c->sOversampler.pMode);
 
                 BIND_PORT(c->pPreGain);
-                BIND_PORT(c->pPreBass);
-                BIND_PORT(c->pPreMid);
-                BIND_PORT(c->pPreTreble);
+                BIND_PORT(c->sPreStack.sSubBass.pGain);
+                BIND_PORT(c->sPreStack.sSubBass.pCenter);
+                BIND_PORT(c->sPreStack.sSubBass.pEnabled);
+                BIND_PORT(c->sPreStack.sBass.pGain);
+                BIND_PORT(c->sPreStack.sBass.pCenter);
+                BIND_PORT(c->sPreStack.sBass.pEnabled);
+                BIND_PORT(c->sPreStack.sMid.pGain);
+                BIND_PORT(c->sPreStack.sMid.pCenter);
+                BIND_PORT(c->sPreStack.sMid.pEnabled);
+                BIND_PORT(c->sPreStack.sHigh.pGain);
+                BIND_PORT(c->sPreStack.sHigh.pCenter);
+                BIND_PORT(c->sPreStack.sHigh.pEnabled);
+                BIND_PORT(c->sPreStack.sPresence.pGain);
+                BIND_PORT(c->sPreStack.sPresence.pCenter);
+                BIND_PORT(c->sPreStack.sPresence.pEnabled);
+                BIND_PORT(c->sPreStack.sAir.pGain);
+                BIND_PORT(c->sPreStack.sAir.pCenter);
+                BIND_PORT(c->sPreStack.sAir.pEnabled);
 
                 BIND_PORT(c->pPostGain);
-                BIND_PORT(c->pPostBass);
-                BIND_PORT(c->pPostMid);
-                BIND_PORT(c->pPostTreble);
+                BIND_PORT(c->sPostStack.sSubBass.pGain);
+                BIND_PORT(c->sPostStack.sSubBass.pCenter);
+                BIND_PORT(c->sPostStack.sSubBass.pEnabled);
+                BIND_PORT(c->sPostStack.sBass.pGain);
+                BIND_PORT(c->sPostStack.sBass.pCenter);
+                BIND_PORT(c->sPostStack.sBass.pEnabled);
+                BIND_PORT(c->sPostStack.sMid.pGain);
+                BIND_PORT(c->sPostStack.sMid.pCenter);
+                BIND_PORT(c->sPostStack.sMid.pEnabled);
+                BIND_PORT(c->sPostStack.sHigh.pGain);
+                BIND_PORT(c->sPostStack.sHigh.pCenter);
+                BIND_PORT(c->sPostStack.sHigh.pEnabled);
+                BIND_PORT(c->sPostStack.sPresence.pGain);
+                BIND_PORT(c->sPostStack.sPresence.pCenter);
+                BIND_PORT(c->sPostStack.sPresence.pEnabled);
+                BIND_PORT(c->sPostStack.sAir.pGain);
+                BIND_PORT(c->sPostStack.sAir.pCenter);
+                BIND_PORT(c->sPostStack.sAir.pEnabled);
 
                 for (size_t s=0; s<nStages; ++s)
                 {
-                    BIND_PORT(c->vStages[s].pGain);
+                    stage_t* stage = &c->vStages[s];
 
-                    BIND_PORT(c->vStages[s].sToneStack.pBass);
-                    BIND_PORT(c->vStages[s].sToneStack.pMid);
-                    BIND_PORT(c->vStages[s].sToneStack.pTreble);
+                    BIND_PORT(stage->pBypass);
 
-                    BIND_PORT(c->vStages[s].sShaper.pSlope);
-                    BIND_PORT(c->vStages[s].sShaper.pShape);
-                    BIND_PORT(c->vStages[s].sShaper.pHighLevel);
-                    BIND_PORT(c->vStages[s].sShaper.pLowLevel);
-                    BIND_PORT(c->vStages[s].sShaper.pRadius);
-                    BIND_PORT(c->vStages[s].sShaper.pLevels);
-                    BIND_PORT(c->vStages[s].sShaper.pCCompanding);
-                    BIND_PORT(c->vStages[s].sShaper.pQCompanding);
-                    BIND_PORT(c->vStages[s].sShaper.pBias);
-                    BIND_PORT(c->vStages[s].sShaper.pDrive);
-                    BIND_PORT(c->vStages[s].sShaper.pBlend);
-                    BIND_PORT(c->vStages[s].sShaper.pShapingFcn);
+                    BIND_PORT(stage->pGain);
 
-                    BIND_PORT(c->vStages[s].pMesh);
+                    BIND_PORT(stage->sToneStack.sSubBass.pGain);
+                    BIND_PORT(stage->sToneStack.sSubBass.pCenter);
+                    BIND_PORT(stage->sToneStack.sSubBass.pEnabled);
+                    BIND_PORT(stage->sToneStack.sBass.pGain);
+                    BIND_PORT(stage->sToneStack.sBass.pCenter);
+                    BIND_PORT(stage->sToneStack.sBass.pEnabled);
+                    BIND_PORT(stage->sToneStack.sMid.pGain);
+                    BIND_PORT(stage->sToneStack.sMid.pCenter);
+                    BIND_PORT(stage->sToneStack.sMid.pEnabled);
+                    BIND_PORT(stage->sToneStack.sHigh.pGain);
+                    BIND_PORT(stage->sToneStack.sHigh.pCenter);
+                    BIND_PORT(stage->sToneStack.sHigh.pEnabled);
+                    BIND_PORT(stage->sToneStack.sPresence.pGain);
+                    BIND_PORT(stage->sToneStack.sPresence.pCenter);
+                    BIND_PORT(stage->sToneStack.sPresence.pEnabled);
+                    BIND_PORT(stage->sToneStack.sAir.pGain);
+                    BIND_PORT(stage->sToneStack.sAir.pCenter);
+                    BIND_PORT(stage->sToneStack.sAir.pEnabled);
+
+                    BIND_PORT(stage->sShaper.pSlope);
+                    BIND_PORT(stage->sShaper.pShape);
+                    BIND_PORT(stage->sShaper.pHighLevel);
+                    BIND_PORT(stage->sShaper.pLowLevel);
+                    BIND_PORT(stage->sShaper.pRadius);
+                    BIND_PORT(stage->sShaper.pLevels);
+                    BIND_PORT(stage->sShaper.pCCompanding);
+                    BIND_PORT(stage->sShaper.pQCompanding);
+                    BIND_PORT(stage->sShaper.pBias);
+                    BIND_PORT(stage->sShaper.pDrive);
+                    BIND_PORT(stage->sShaper.pBlend);
+                    BIND_PORT(stage->sShaper.pShapingFcn);
+
+                    BIND_PORT(stage->pMesh);
                 }
             }
 
@@ -326,7 +406,7 @@ namespace lsp
                         c->vStages[s].sBypass.destroy();
 
                         c->vStages[s].sToneStack.sEQ.destroy();
-                        c->vStages[s].sToneStack.vBands = NULL;
+//                        c->vStages[s].sToneStack.vBands = NULL;
 
                         c->vStages[s].sShaper.sShaper.destroy();
                     }
@@ -363,7 +443,7 @@ namespace lsp
                 c->sBypass.init(nSampleRate);
 
                 c->sPreStack.sEQ.set_sample_rate(nSampleRate);
-                configure_tone_stack(&c->sPreStack, &sBands);
+                configure_tone_stack(&c->sPreStack);
 
                 c->sOversampler.nOverSampleRate = c->sOversampler.nOversampling * nSampleRate;
 
@@ -372,13 +452,13 @@ namespace lsp
                     c->vStages[s].sBypass.init(c->sOversampler.nOverSampleRate);
 
                     c->vStages[s].sToneStack.sEQ.set_sample_rate(c->sOversampler.nOverSampleRate);
-                    configure_tone_stack(&c->vStages[s].sToneStack, &sBands);
+                    configure_tone_stack(&c->vStages[s].sToneStack);
 
                     c->vStages[s].sShaper.sShaper.set_sample_rate(c->sOversampler.nOverSampleRate);
                 }
 
                 c->sPostStack.sEQ.set_sample_rate(nSampleRate);
-                configure_tone_stack(&c->sPostStack, &sBands);
+                configure_tone_stack(&c->sPostStack);
             }
         }
 
@@ -456,162 +536,234 @@ namespace lsp
             }
         }
 
+        void saturator::init_stack_band_state_stage(stack_band_t *band, float center, bool enable)
+        {
+            band->fPV_pGain     = meta::saturator::BAND_GAIN_DFL;
+            band->fPV_pCenter   = center;
+            band->fPV_pEnabled  = enable;
+            band->bRecompute    = true;
+        }
+
         void saturator::init_state_stage(channel_t *c)
         {
-            c->fPV_pPreGain     = meta::saturator::PRE_GAIN_DFL;
-            c->fPV_pPreBass     = meta::saturator::BAND_GAIN_DFL;
-            c->fPV_pPreMid      = meta::saturator::BAND_GAIN_DFL;
-            c->fPV_pPreTreble   = meta::saturator::BAND_GAIN_DFL;
-            c->bRecomputePre    = true;
+            c->fPV_pPreGain = meta::saturator::PRE_GAIN_DFL;
+            init_stack_band_state_stage(&c->sPreStack.sSubBass,     meta::saturator::SUB_BASS_DFL,  meta::saturator::ENABLE_SUB_BASS);
+            init_stack_band_state_stage(&c->sPreStack.sBass,        meta::saturator::BASS_DFL,      meta::saturator::ENABLE_BASS);
+            init_stack_band_state_stage(&c->sPreStack.sMid,         meta::saturator::MID_DFL,       meta::saturator::ENABLE_MID);
+            init_stack_band_state_stage(&c->sPreStack.sHigh,        meta::saturator::HIGH_DFL,      meta::saturator::ENABLE_HIGH);
+            init_stack_band_state_stage(&c->sPreStack.sPresence,    meta::saturator::PRESENCE_DFL,  meta::saturator::ENABLE_PRESENCE);
+            init_stack_band_state_stage(&c->sPreStack.sAir,         meta::saturator::AIR_DFL,       meta::saturator::ENABLE_AIR);
 
-            c->fPV_pPostGain    = meta::saturator::POST_GAIN_DFL;
-            c->fPV_pPostBass    = meta::saturator::BAND_GAIN_DFL;
-            c->fPV_pPostMid     = meta::saturator::BAND_GAIN_DFL;
-            c->fPV_pPostTreble  = meta::saturator::BAND_GAIN_DFL;
-            c->bRecomputePost   = true;
+            c->fPV_pPostGain = meta::saturator::POST_GAIN_DFL;
+            init_stack_band_state_stage(&c->sPostStack.sSubBass,    meta::saturator::SUB_BASS_DFL,  meta::saturator::ENABLE_SUB_BASS);
+            init_stack_band_state_stage(&c->sPostStack.sBass,       meta::saturator::BASS_DFL,      meta::saturator::ENABLE_BASS);
+            init_stack_band_state_stage(&c->sPostStack.sMid,        meta::saturator::MID_DFL,       meta::saturator::ENABLE_MID);
+            init_stack_band_state_stage(&c->sPostStack.sHigh,       meta::saturator::HIGH_DFL,      meta::saturator::ENABLE_HIGH);
+            init_stack_band_state_stage(&c->sPostStack.sPresence,   meta::saturator::PRESENCE_DFL,  meta::saturator::ENABLE_PRESENCE);
+            init_stack_band_state_stage(&c->sPostStack.sAir,        meta::saturator::AIR_DFL,       meta::saturator::ENABLE_AIR);
 
             c->sOversampler.nPV_pMode   = meta::saturator::SAT_OVS_DFL;
             c->sOversampler.bRecompute  = true;
 
             for (size_t s=0; s<nStages; ++s)
             {
-                c->vStages[s].fPV_pGain                 = meta::saturator::STAGE_GAIN_DFL;
+                stage_t* stage = &c->vStages[s];
 
-                c->vStages[s].sToneStack.fPV_pBass      = meta::saturator::BAND_GAIN_DFL;
-                c->vStages[s].sToneStack.fPV_pMid       = meta::saturator::BAND_GAIN_DFL;
-                c->vStages[s].sToneStack.fPV_pTreble    = meta::saturator::BAND_GAIN_DFL;
-                c->vStages[s].sToneStack.bRecompute     = true;
+                stage->fPV_pGain = meta::saturator::STAGE_GAIN_DFL;
+                init_stack_band_state_stage(&stage->sToneStack.sSubBass,    meta::saturator::SUB_BASS_DFL,  meta::saturator::ENABLE_SUB_BASS);
+                init_stack_band_state_stage(&stage->sToneStack.sBass,       meta::saturator::BASS_DFL,      meta::saturator::ENABLE_BASS);
+                init_stack_band_state_stage(&stage->sToneStack.sMid,        meta::saturator::MID_DFL,       meta::saturator::ENABLE_MID);
+                init_stack_band_state_stage(&stage->sToneStack.sHigh,       meta::saturator::HIGH_DFL,      meta::saturator::ENABLE_HIGH);
+                init_stack_band_state_stage(&stage->sToneStack.sPresence,   meta::saturator::PRESENCE_DFL,  meta::saturator::ENABLE_PRESENCE);
+                init_stack_band_state_stage(&stage->sToneStack.sAir,        meta::saturator::AIR_DFL,       meta::saturator::ENABLE_AIR);
 
 //                c->vStages[s].sShaper.fPV_pPreGain      = meta::saturator::PRE_GAIN_DFL;
 //                c->vStages[s].sShaper.fPV_pPostGain     = meta::saturator::POST_GAIN_DFL;
-                c->vStages[s].sShaper.fPV_pSlope        = meta::saturator::SLOPE_DFL;
-                c->vStages[s].sShaper.fPV_pShape        = meta::saturator::SHAPE_DFL;
-                c->vStages[s].sShaper.fPV_pHighLevel    = meta::saturator::HIGH_LEVEL_DFL;
-                c->vStages[s].sShaper.fPV_pLowLevel     = meta::saturator::LOW_LEVEL_DFL;
-                c->vStages[s].sShaper.fPV_pRadius       = meta::saturator::RADIUS_DFL;
-                c->vStages[s].sShaper.fPV_pLevels       = meta::saturator::LEVELS_DFL;
-                c->vStages[s].sShaper.fPV_pCCompanding  = meta::saturator::C_COMPANDING_DFL;
-                c->vStages[s].sShaper.fPV_pQCompanding  = meta::saturator::Q_COMPANDING_DFL;
-                c->vStages[s].sShaper.fPV_pBias         = meta::saturator::BIAS_DFL;
-                c->vStages[s].sShaper.fPV_pDrive        = meta::saturator::DRIVE_DFL;
-                c->vStages[s].sShaper.fPV_pBlend        = meta::saturator::BLEND_DFL;
-                c->vStages[s].sShaper.nPV_pShapingFcn   = meta::saturator::SAT_SH_FCN_DEFAULT;
-                c->vStages[s].sShaper.bRecompute        = true;
+                stage->sShaper.fPV_pSlope           = meta::saturator::SLOPE_DFL;
+                stage->sShaper.fPV_pShape           = meta::saturator::SHAPE_DFL;
+                stage->sShaper.fPV_pHighLevel       = meta::saturator::HIGH_LEVEL_DFL;
+                stage->sShaper.fPV_pLowLevel        = meta::saturator::LOW_LEVEL_DFL;
+                stage->sShaper.fPV_pRadius          = meta::saturator::RADIUS_DFL;
+                stage->sShaper.fPV_pLevels          = meta::saturator::LEVELS_DFL;
+                stage->sShaper.fPV_pCCompanding     = meta::saturator::C_COMPANDING_DFL;
+                stage->sShaper.fPV_pQCompanding     = meta::saturator::Q_COMPANDING_DFL;
+                stage->sShaper.fPV_pBias            = meta::saturator::BIAS_DFL;
+                stage->sShaper.fPV_pDrive           = meta::saturator::DRIVE_DFL;
+                stage->sShaper.fPV_pBlend           = meta::saturator::BLEND_DFL;
+                stage->sShaper.nPV_pShapingFcn      = meta::saturator::SAT_SH_FCN_DEFAULT;
+                stage->sShaper.nUpdate              = 0 | UPD_SLOPE | UPD_SHAPE | UPD_HIGH_LEVEL
+                                                        | UPD_LOW_LEVEL | UPD_RADIUS | UPD_LEVELS
+                                                        | UPD_Q_COMPANDING | UPD_C_COMPANDING | UPD_BIAS
+                                                        | UPD_DRIVE | UPD_BLEND | UPD_SHAPING_FCN;
             }
         }
 
         void saturator::commit_staged_state_change(channel_t *c)
         {
             c->fPreGain = c->fPV_pPreGain;
-
-            if (c->bRecomputePre)
-            {
-                configure_tone_stack(&c->sPreStack, &sBands);
-                c->bRecomputePre = false;
-            }
+            configure_tone_stack(&c->sPreStack);
 
             c->fPostGain = c->fPV_pPostGain;
+            configure_tone_stack(&c->sPostStack);
 
-            if (c->bRecomputePost)
-            {
-                configure_tone_stack(&c->sPostStack, &sBands);
-                c->bRecomputePost = false;
-            }
-
-            if (c->sOversampler.bRecompute)
-            {
-                c->sOversampler.enOverMode = get_oversampler_mode(c->sOversampler.nPV_pMode);
-
-                c->sOversampler.sOvs.set_mode(c->sOversampler.enOverMode);
-                if (c->sOversampler.sOvs.modified())
-                    c->sOversampler.sOvs.update_settings();
-
-                c->sOversampler.nOversampling   = c->sOversampler.sOvs.get_oversampling();
-                c->sOversampler.nOverSampleRate = nSampleRate * c->sOversampler.nOversampling;
-
-                c->sOversampler.bRecompute = false;
-            }
+            configure_oversampler(&c->sOversampler);
 
             for (size_t s=0; s<nStages; ++s)
             {
                 stage_t* stage = &c->vStages[s];
 
                 stage->fGain = stage->fPV_pGain;
-
-                if (stage->sToneStack.bRecompute)
-                {
-                    configure_tone_stack(&stage->sToneStack, &sBands);
-                    c->vStages[s].sToneStack.bRecompute = false;
-                }
-
-                // TODO:  Do these selectively with a boolean update flag?
-                if  (stage->sShaper.bRecompute)
-                {
-                    stage->sShaper.fSlope = stage->sShaper.fPV_pSlope;
-                    stage->sShaper.sShaper.set_slope(stage->sShaper.fSlope);
-
-                    stage->sShaper.fShape = stage->sShaper.fPV_pShape;
-                    stage->sShaper.sShaper.set_shape(stage->sShaper.fShape);
-
-                    stage->sShaper.fHighLevel = stage->sShaper.fPV_pHighLevel;
-                    stage->sShaper.sShaper.set_high_level(stage->sShaper.fHighLevel);
-
-                    stage->sShaper.fLowLevel = stage->sShaper.fPV_pLowLevel;
-                    stage->sShaper.sShaper.set_low_level(stage->sShaper.fLowLevel);
-
-                    stage->sShaper.fRadius = stage->sShaper.fPV_pRadius;
-                    stage->sShaper.sShaper.set_radius(stage->sShaper.fRadius);
-
-                    stage->sShaper.fLevels = stage->sShaper.fPV_pLevels;
-                    stage->sShaper.sShaper.set_levels(stage->sShaper.fLevels);
-
-                    stage->sShaper.fCCompanding = stage->sShaper.fPV_pCCompanding;
-                    stage->sShaper.sShaper.set_continuous_companding(stage->sShaper.fCCompanding);
-
-                    stage->sShaper.fQCompanding = stage->sShaper.fPV_pQCompanding;
-                    stage->sShaper.sShaper.set_quantized_companding(stage->sShaper.fQCompanding);
-
-                    stage->sShaper.fBias = stage->sShaper.fPV_pBias;
-                    stage->sShaper.sShaper.set_bias(stage->sShaper.fBias);
-
-                    stage->sShaper.fDrive = stage->sShaper.fPV_pDrive;
-                    stage->sShaper.sShaper.set_drive(stage->sShaper.fDrive);
-
-                    stage->sShaper.fBlend = stage->sShaper.fPV_pBlend;
-                    stage->sShaper.sShaper.set_blend(stage->sShaper.fBlend);
-
-                    stage->sShaper.enShapingFcn = get_shaping_function(stage->sShaper.nPV_pShapingFcn);
-                    stage->sShaper.sShaper.set_function(stage->sShaper.enShapingFcn);
-
-                    stage->sShaper.bRecompute = false;
-                }
+                configure_tone_stack(&stage->sToneStack);
+                configure_stage(stage);
             }
         }
 
-        void saturator::calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate)
+//        void saturator::calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate)
+//        {
+//            float nyquist           = samplerate / 2;
+//            float lowest            = MIN_BAND_FREQUENCY;
+//            float highest           = lsp::lsp_min(MAX_ANTI_ALIASING_FREQUENCY, NYQUIST_SCALER * nyquist);
+//
+//            float exponent          = 1.0f / nBands;
+//            float band_finder       = powf(highest / lowest, exponent);
+//
+//            bands->fBassBandLow     = lsp::lsp_min(DC_BLOCK_FREQUENCY, lowest);
+//            bands->fBassBandHigh    = bands->fBassBandLow * band_finder;
+//
+//            bands->fMidBandLow      = bands->fBassBandHigh;
+//            bands->fMidBandHigh     = bands->fMidBandLow * band_finder;
+//
+//            bands->fTrebleBandLow   = bands->fMidBandHigh;
+//            bands->fTrebleBandHigh  = highest;
+//        }
+
+        void saturator::configure_oversampler(oversampler_t *ovs)
         {
-            float nyquist           = samplerate / 2;
-            float lowest            = MIN_BAND_FREQUENCY;
-            float highest           = lsp::lsp_min(MAX_ANTI_ALIASING_FREQUENCY, NYQUIST_SCALER * nyquist);
+            if (!ovs->bRecompute)
+                return;
 
-            float exponent          = 1.0f / nBands;
-            float band_finder       = powf(highest / lowest, exponent);
+            ovs->enOverMode = get_oversampler_mode(ovs->nPV_pMode);
 
-            bands->fBassBandLow     = lsp::lsp_min(DC_BLOCK_FREQUENCY, lowest);
-            bands->fBassBandHigh    = bands->fBassBandLow * band_finder;
+            ovs->sOvs.set_mode(ovs->enOverMode);
+            if (ovs->sOvs.modified())
+                ovs->sOvs.update_settings();
 
-            bands->fMidBandLow      = bands->fBassBandHigh;
-            bands->fMidBandHigh     = bands->fMidBandLow * band_finder;
+            ovs->nOversampling      = ovs->sOvs.get_oversampling();
+            ovs->nOverSampleRate    = nSampleRate * ovs->nOversampling;
 
-            bands->fTrebleBandLow   = bands->fMidBandHigh;
-            bands->fTrebleBandHigh  = highest;
+            ovs->bRecompute         = false;
         }
 
-        void saturator::configure_tone_stack(tone_stack_t *stack, const tone_stack_bands_t *bands)
+        void saturator::configure_stage(stage_t *stage)
+        {
+            if (stage->sShaper.nUpdate != 0)
+                return;
+
+            if (stage->sShaper.nUpdate & UPD_SLOPE)
+            {
+                stage->sShaper.fSlope = stage->sShaper.fPV_pSlope;
+                stage->sShaper.sShaper.set_slope(stage->sShaper.fSlope);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_SHAPE)
+            {
+                stage->sShaper.fShape = stage->sShaper.fPV_pShape;
+                stage->sShaper.sShaper.set_shape(stage->sShaper.fShape);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_HIGH_LEVEL)
+            {
+                stage->sShaper.fHighLevel = stage->sShaper.fPV_pHighLevel;
+                stage->sShaper.sShaper.set_high_level(stage->sShaper.fHighLevel);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_LOW_LEVEL)
+            {
+                stage->sShaper.fLowLevel = stage->sShaper.fPV_pLowLevel;
+                stage->sShaper.sShaper.set_low_level(stage->sShaper.fLowLevel);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_RADIUS)
+            {
+                stage->sShaper.fRadius = stage->sShaper.fPV_pRadius;
+                stage->sShaper.sShaper.set_radius(stage->sShaper.fRadius);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_LEVELS)
+            {
+                stage->sShaper.fLevels = stage->sShaper.fPV_pLevels;
+                stage->sShaper.sShaper.set_levels(stage->sShaper.fLevels);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_Q_COMPANDING)
+            {
+                stage->sShaper.fQCompanding = stage->sShaper.fPV_pQCompanding;
+                stage->sShaper.sShaper.set_quantized_companding(stage->sShaper.fQCompanding);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_C_COMPANDING)
+            {
+                stage->sShaper.fCCompanding = stage->sShaper.fPV_pCCompanding;
+                stage->sShaper.sShaper.set_continuous_companding(stage->sShaper.fCCompanding);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_BIAS)
+            {
+                stage->sShaper.fBias = stage->sShaper.fPV_pBias;
+                stage->sShaper.sShaper.set_bias(stage->sShaper.fBias);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_DRIVE)
+            {
+                stage->sShaper.fDrive = stage->sShaper.fPV_pDrive;
+                stage->sShaper.sShaper.set_drive(stage->sShaper.fDrive);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_BLEND)
+            {
+                stage->sShaper.fBlend = stage->sShaper.fPV_pBlend;
+                stage->sShaper.sShaper.set_blend(stage->sShaper.fBlend);
+            }
+
+            if (stage->sShaper.nUpdate & UPD_SHAPING_FCN)
+            {
+                stage->sShaper.enShapingFcn = get_shaping_function(stage->sShaper.nPV_pShapingFcn);
+                stage->sShaper.sShaper.set_function(stage->sShaper.enShapingFcn);
+            }
+
+            stage->sShaper.nUpdate = 0;
+        }
+
+        void saturator::configure_stack_band(stack_band_t *band, filter_type_t type)
+        {
+            if (!band->bEnabled)
+                type = dspu::FLT_NONE;
+
+            if (band->fLow > NYQUIST_SCALER * nSampleRate)
+                type = dspu::FLT_NONE;
+
+            if (band->fHigh > NYQUIST_SCALER * nSampleRate)
+                type = dspu::FLT_NONE;
+
+            if (band->fCenter > NYQUIST_SCALER * nSampleRate)
+                type = dspu::FLT_NONE;
+
+            band->sFP.nSlope    = 1;
+            band->sFP.fQuality  = 0.0f;
+            band->sFP.fGain     = band->fGain;
+            band->sFP.nType     = type;
+            band->sFP.fFreq     = band->fCenter;
+            band->sFP.fFreq     = band->fCenter;
+
+            if (type == dspu::FLT_MT_LRX_LADDERPASS)
+                1;
+        }
+
+        void saturator::configure_tone_stack(tone_stack_t *stack)
         {
             dspu::filter_params_t *fp;
 
-            eq_band_t *bass                 = &stack->vBands[0];
+            eq_band_t *subbass              = &stack->vBands[0];
             fp                              = &bass->sFP;
             fp->nSlope                      = 1;
             fp->fQuality                    = 0.0f;
