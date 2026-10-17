@@ -36,7 +36,7 @@ namespace lsp
             static constexpr size_t         MAX_STAGES          = 5;
 
             // MAX_TONE_BANDS *MUST* reflect the number of bands defined below
-            static constexpr size_t         MAX_TONE_BANDS      = 6;
+//            static constexpr size_t         MAX_TONE_BANDS      = 6;
 
             static constexpr size_t         MESH_SIZE           = 280;
 

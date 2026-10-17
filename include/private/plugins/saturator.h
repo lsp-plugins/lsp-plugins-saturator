@@ -189,13 +189,15 @@ namespace lsp
                 enum filter_type_t
                 {
                     LOSHELF     = dspu::FLT_MT_LRX_LOSHELF,
-                    HISHEKF     = dspu::FLT_MT_LRX_HISHELF,
+                    HISHELF     = dspu::FLT_MT_LRX_HISHELF,
                     LADDERPASS  = dspu::FLT_MT_LRX_LADDERPASS,
                     NONE        = dspu::FLT_NONE,
                 };
 
                 typedef struct stack_band_t
                 {
+                	size_t 					nEQIndex;
+
                     float                   fGain;
                     float                   fCenter;
                     float                   fLow;
@@ -219,6 +221,9 @@ namespace lsp
                 {
                     dspu::Equalizer         sEQ;
 //                    eq_band_t              *vBands;
+
+                    dspu::filter_params_t   sDCBlockFP;
+                    dspu::filter_params_t   sAntialFP;
 
                     stack_band_t            sSubBass;
                     stack_band_t            sBass;
@@ -289,7 +294,7 @@ namespace lsp
 
             protected:
                 size_t                      nSampleRate;            // Sample rate
-                size_t                      nBands;                 // Number of bands for Pre and Post EQs of all channels.
+                size_t                      nFilters;               // Number of filters in EQs.
                 size_t                      nStages;                // Number of nonlinear stages in each channel
                 size_t                      nChannels;              // Number of channels
                 channel_t                  *vChannels;              // Delay channels
@@ -323,10 +328,16 @@ namespace lsp
 //                void                            calculate_tone_stack_bands(tone_stack_bands_t *bands, size_t samplerate);
                 void                            configure_oversampler(oversampler_t *ovs);
                 void                            configure_stage(stage_t *stage);
-                void                            configure_stack_band(stack_band_t *band, filter_type_t type);
+                void                            configure_quality_filters(tone_stack_t *stack);
+                void                            configure_stack_band(dspu::Equalizer *eq, stack_band_t *band, filter_type_t type);
                 void                            configure_tone_stack(tone_stack_t *stack);
                 void                            process_stage(stage_t *stage, float *dst, const float *src, size_t count);
                 void                            process_stages(channel_t *c, float *dst, const float *src, size_t count);
+                void                            update_stack_band_settings(stack_band_t *band);
+                void                            update_tone_stack_settings(tone_stack_t *stack);
+                void                            update_oversampler_settings(oversampler_t *ovs);
+                void                            update_shaper_settings(shaper_t *shaper);
+                void                            update_stage_settings(stage_t *stage);
 
             public:
                 virtual void                    update_sample_rate(long sr) override;
@@ -338,7 +349,7 @@ namespace lsp
                 virtual void                    init(plug::IWrapper *wrapper, plug::IPort **ports) override;
                 virtual void                    destroy() override;
 
-                explicit saturator(const meta::plugin_t *meta, size_t bands, size_t stages);
+                explicit saturator(const meta::plugin_t *meta, size_t stages);
                 saturator (const saturator &) = delete;
                 saturator (saturator &&) = delete;
                 virtual ~saturator() override;
