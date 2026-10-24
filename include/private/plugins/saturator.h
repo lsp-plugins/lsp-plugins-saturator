@@ -241,6 +241,8 @@ namespace lsp
                     shaper_t                sShaper;                // Shaper
                     bool                    bMeshSync;
 
+                    float                  *vDisplayOrdinate;
+
                     plug::IPort            *pBypass;                // Bypass
                     plug::IPort            *pGain;                  // Gain port
                     plug::IPort            *pMesh;
@@ -302,7 +304,8 @@ namespace lsp
                 float                      *vBuffer;                // Temporary buffer for audio processing
                 float                      *vOSBuffer;              // Temporary buffer for oversampled audio processing
                 float                      *vOSStageBuffer;         // Temporary buffer for Saturation stage processing. It contains oversampled data.
-                float                      *VOSStageAccBuffer;      // Temporary buffer where we accumulate the results of the saturation stages.
+                float                      *vOSStageAccBuffer;      // Temporary buffer where we accumulate the results of the saturation stages.
+                float                      *vDisplayAbscissa;
 
                 plug::IPort                *pBypass;                // Bypass
                 plug::IPort                *pStageSel;

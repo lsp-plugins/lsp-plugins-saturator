@@ -102,13 +102,14 @@ namespace lsp
 
             // Initialize other parameters
             nSampleRate         = 0;
-            nFilters              = N_FILTERS;
+            nFilters            = N_FILTERS;
             nStages             = stages;
             vChannels           = NULL;
             vBuffer             = NULL;
             vOSBuffer           = NULL;
             vOSStageBuffer      = NULL;
-            VOSStageAccBuffer   = NULL;
+            vOSStageAccBuffer   = NULL;
+            vDisplayAbscissa    = NULL;
 
             pBypass             = NULL;
             pStageSel           = NULL;
@@ -188,6 +189,8 @@ namespace lsp
             const size_t szof_tone_stack    = align_size(sizeof(tone_stack_t) * nStages, OPTIMAL_ALIGN);
             const size_t szof_tone_stacks   = szof_tone_stack * nChannels;
 
+            // We have 1x vDisplayOrdinate buffer per channel, plus 1x vDisplayAbscissa for the entire plugin.
+            const size_t szof_display_bufs  = (nChannels + 1) * meta::saturator::MESH_SIZE * sizeof(float);
 
 //            /** Each `ch_state_stage_t` object has:
 //             * 1x vfPV_pre_eq_pGain vector of nBands float
@@ -210,7 +213,8 @@ namespace lsp
                     szof_channels +     // Top level channel size
 //                    szof_eqs +          // Size of all EQ bands
                     szof_stages +       // Size of all nonlinear stages
-                    szof_tone_stacks;   // Size of all tone stacks
+                    szof_tone_stacks +   // Size of all tone stacks
+                    szof_display_bufs;
 
             // Allocate memory-aligned data
             uint8_t *ptr = alloc_aligned<uint8_t>(pData, alloc, OPTIMAL_ALIGN);
@@ -270,7 +274,7 @@ namespace lsp
             vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
             vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
             vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
-            VOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            vOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
 
             // Check that allocation did not went out of bounds. There will be an error in log otherwise
             lsp_assert(ptr <= &save[alloc]);
@@ -288,6 +292,14 @@ namespace lsp
                     stage_t* stage = &c->vStages[s];
                     init_tone_stack(&stage->sToneStack);
                 }
+            }
+
+            // We put a linear ramp between -1 to 1 inside vDisplayAbscissa
+            vDisplayAbscissa[0] = 0.0f;
+            float step =  2.0f / (meta::saturator::MESH_SIZE - 1.0f);
+            for (size_t n=1; n<meta::saturator::MESH_SIZE; ++n)
+            {
+                vDisplayAbscissa[n] = vDisplayAbscissa[n - 1] + n * step;
             }
 
             // Bind ports
@@ -430,6 +442,8 @@ namespace lsp
 //                        c->vStages[s].sToneStack.vBands = NULL;
 
                         c->vStages[s].sShaper.sShaper.destroy();
+
+                        c->vStages[s].vDisplayOrdinate = NULL;
                     }
                     c->vStages = NULL;
 
@@ -441,7 +455,8 @@ namespace lsp
             vBuffer             = NULL;
             vOSBuffer           = NULL;
             vOSStageBuffer      = NULL;
-            VOSStageAccBuffer   = NULL;
+            vOSStageAccBuffer   = NULL;
+            vDisplayAbscissa    = NULL;
 
             // Free previously allocated data chunk
             if (pData != NULL)
@@ -617,6 +632,8 @@ namespace lsp
                                                         | UPD_LOW_LEVEL | UPD_RADIUS | UPD_LEVELS
                                                         | UPD_Q_COMPANDING | UPD_C_COMPANDING | UPD_BIAS
                                                         | UPD_DRIVE | UPD_BLEND | UPD_SHAPING_FCN;
+
+                stage->bMeshSync                    = true;
             }
         }
 
@@ -753,7 +770,8 @@ namespace lsp
                 stage->sShaper.sShaper.set_function(stage->sShaper.enShapingFcn);
             }
 
-            stage->sShaper.nUpdate = 0;
+            stage->sShaper.nUpdate  = 0;
+            stage->bMeshSync        = true;
         }
 
         void saturator::configure_quality_filters(tone_stack_t *stack)
@@ -887,6 +905,22 @@ namespace lsp
                 src     += to_do;
                 n       += to_do;
             }
+
+            if (stage->bMeshSync)
+            {
+                plug::mesh_t *mesh = stage->pMesh->buffer<plug::mesh_t>();
+
+                if ((mesh != NULL) && (mesh->isEmpty()))
+                {
+                    stage->sShaper.sShaper.get_map(stage->vDisplayOrdinate, vDisplayAbscissa, meta::saturator::MESH_SIZE);
+
+                    dsp::copy(mesh->pvData[0], vDisplayAbscissa,        meta::saturator::MESH_SIZE);
+                    dsp::copy(mesh->pvData[1], stage->vDisplayOrdinate, meta::saturator::MESH_SIZE);
+                    mesh->data(2, meta::saturator::MESH_SIZE);
+                }
+
+                stage->bMeshSync = false;
+            }
         }
 
         void saturator::process_stages(channel_t *c, float *dst, const float *src, size_t count)
@@ -895,12 +929,12 @@ namespace lsp
             {
                 const size_t to_do = lsp_min(count - n, STAGE_BUFFER_SIZE);
 
-                dsp::copy(VOSStageAccBuffer, src, to_do);
+                dsp::copy(vOSStageAccBuffer, src, to_do);
 
                 for (size_t s=0; s<nStages; ++s)
                 {
-                    process_stage(&c->vStages[s], VOSStageAccBuffer, VOSStageAccBuffer, to_do);
-                    dsp::copy(dst, VOSStageAccBuffer, to_do);
+                    process_stage(&c->vStages[s], vOSStageAccBuffer, vOSStageAccBuffer, to_do);
+                    dsp::copy(dst, vOSStageAccBuffer, to_do);
 
                     dst     += to_do;
                     src     += to_do;
