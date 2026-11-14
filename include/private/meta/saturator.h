@@ -193,7 +193,8 @@ namespace lsp
                 SAT_SH_FCN_QUANTIZED_MU_LAW_EXPANSION,
                 SAT_SH_FCN_TAP_TUBEWARMTH,
 
-                SAT_SH_FCN_DEFAULT = SAT_SH_FCN_HYPERBOLIC
+                SAT_SH_FCN_DEFAULT  = SAT_SH_FCN_HYPERBOLIC,
+                SAT_SH_FCN_MAX      = SAT_SH_FCN_TAP_TUBEWARMTH
             };
         } saturator;
 

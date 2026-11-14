@@ -65,7 +65,6 @@ namespace lsp
         typedef struct plugin_settings_t
         {
             const meta::plugin_t   *metadata;
-            uint8_t                 bands;
             uint8_t                 stages;
         } plugin_settings_t;
 
@@ -190,7 +189,8 @@ namespace lsp
             const size_t szof_tone_stacks   = szof_tone_stack * nChannels;
 
             // We have 1x vDisplayOrdinate buffer per channel, plus 1x vDisplayAbscissa for the entire plugin.
-            const size_t szof_display_bufs  = (nChannels + 1) * meta::saturator::MESH_SIZE * sizeof(float);
+            const size_t szof_display_buf   = meta::saturator::MESH_SIZE * sizeof(float);
+            const size_t szof_display_bufs  = (nChannels + 1) * szof_display_buf;
 
 //            /** Each `ch_state_stage_t` object has:
 //             * 1x vfPV_pre_eq_pGain vector of nBands float
@@ -223,6 +223,12 @@ namespace lsp
             lsp_guard_assert(uint8_t * const save = ptr);
 
             // Assign all resources
+            vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
+            vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
+            vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            vOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            vDisplayAbscissa        = advance_ptr_bytes<float>(ptr, szof_display_bufs);
+
             vChannels = advance_ptr_bytes<channel_t>(ptr, szof_channels);
 
             for (size_t i=0; i < nChannels; ++i)
@@ -248,6 +254,8 @@ namespace lsp
 //                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                     c->vStages[s].sToneStack.sEQ.construct();
                     c->vStages[s].sToneStack.sEQ.init(nFilters, meta::saturator::FFT_RANK);
+
+                    c->vStages[s].vDisplayOrdinate = advance_ptr_bytes<float>(ptr, szof_display_bufs);
                 }
 
 //                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
@@ -271,11 +279,6 @@ namespace lsp
                 c->pOut                 = NULL;
             }
 
-            vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
-            vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
-            vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
-            vOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
-
             // Check that allocation did not went out of bounds. There will be an error in log otherwise
             lsp_assert(ptr <= &save[alloc]);
 
@@ -296,7 +299,7 @@ namespace lsp
 
             // We put a linear ramp between -1 to 1 inside vDisplayAbscissa
             vDisplayAbscissa[0] = 0.0f;
-            float step =  2.0f / (meta::saturator::MESH_SIZE - 1.0f);
+            float step = 2.0f / (meta::saturator::MESH_SIZE - 1.0f);
             for (size_t n=1; n<meta::saturator::MESH_SIZE; ++n)
             {
                 vDisplayAbscissa[n] = vDisplayAbscissa[n - 1] + n * step;
@@ -369,6 +372,7 @@ namespace lsp
                 BIND_PORT(c->sPostStack.sAir.pCenter);
                 BIND_PORT(c->sPostStack.sAir.pEnabled);
 
+                // Stage controls
                 for (size_t s=0; s<nStages; ++s)
                 {
                     stage_t* stage = &c->vStages[s];
@@ -408,7 +412,12 @@ namespace lsp
                     BIND_PORT(stage->sShaper.pDrive);
                     BIND_PORT(stage->sShaper.pBlend);
                     BIND_PORT(stage->sShaper.pShapingFcn);
+                }
 
+                // Stage visual outs
+                for (size_t s=0; s<nStages; ++s)
+                {
+                    stage_t* stage = &c->vStages[s];
                     BIND_PORT(stage->pMesh);
                 }
             }

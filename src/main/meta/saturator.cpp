@@ -159,7 +159,7 @@ namespace lsp
 
         #define BAND_CONTROLS(id, label, alias, limits, dfl) \
             AMP_GAIN_RANGE("g" id, "Gain" label, "Gain" alias, saturator::BAND_GAIN_DFL, saturator::BAND_GAIN_MIN, saturator::BAND_GAIN_MAX), \
-            LOG_CONTROL("f", "Center Frequency", "Center Frequency", U_HZ, limits), \
+            LOG_CONTROL("f" id, "Center Frequency", "Center Frequency", U_HZ, limits), \
             SWITCH("e" id, "Enable" label, "On " alias, dfl)
 
         #define TONE_STACK_CONTROLS(id, label, alias)  \

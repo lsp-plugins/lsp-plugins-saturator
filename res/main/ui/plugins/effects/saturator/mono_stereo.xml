@@ -1,12 +1,12 @@
 <plugin resizable="true">
-	<hbox spacing="4">
-		<group text="groups.saturator_stages" ipadding="0" fill="true">
-			<tabs id="sts">
-				<ui:for id="i" first="1" count="5">
-				<hbox spacing="4" expand="true">
-				
-					<group ui:inject="GraphGroup" ipadding="0" expand="true" fill="true" text="labels.graphs.saturator_function">
-						<graph width.min="550" height.min="550" expand="true" fill="true">
+  <hbox spacing="4">
+    <group text="groups.saturator_stages" ipadding="0" fill="true">
+      <tabs id="sts">
+        <ui:for id="i" first="1" count="5">
+        <hbox spacing="4" expand="true">
+          
+          <group ui:inject="GraphGroup" ipadding="0" expand="true" fill="true" text="labels.graphs.saturator_function">
+            <graph width.min="550" height.min="550" expand="true" fill="true">
 							<origin halign="0.0" valign="0.0" visible="false"/>
 							
 							<!-- Grid -->
@@ -42,81 +42,126 @@
 							</ui:attributes>	
 										
 						</graph>
-					</group>
-					
-					<group text="groups.saturator_parameters" ipadding="0" fill="true">
-						<grid rows="16" cols="2">
-							<label text="labels.bypass">
-							<button id="bp{i}" >
-							
-							<label text="labels.gain">
-							<knob id="gn{i}" />
-							
-							<label text="labels.bass">
-							<knob id="bs{i}" />
-							
-							<label text="labels.middle">
-							<knob id="md{i}" />
-							
-							<label text="labels.treble">
-							<knob id="tb{i}" />
-							
-							<label text="labels.saturator_function">
-							<combo id="sp{i}" />
-							
-							<label text="labels.slope" visibility="(:sp{i} ieq 0)" />
-							<knob id="sl{i}" visibility="(:sp{i} ieq 0)" />
-							
-							<label text="labels.shape" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)" />
-							<knob id="sh{i}" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)"/>
-							
-							<label text="labels.high_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-							<knob id="hl{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-							
-							<label text="labels.low_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-							<knob id="ll{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-							
-							<label text="labels.radius" visibility="(:sp{i} ieq 8)" />
-							<knob id="rd{i}" visibility="(:sp{i} ieq 8)" />
-							
-							<label text="labels.levels" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
-							<knob id="lv{i}" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
-							
-							<label text="labels.continuos_companding" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
-							<knob id="cp{i}" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
-							
-							<label text="labels.quantized_companding" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-							<knob id="qp{i}" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-							
-							<label text="labels.bias" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-							<knob id="bs{i}" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-							
-							<label text="labels.blend" visibility="(:sp{i} ieq 21)" />
-							<knob id="bl{i}" visibility="(:sp{i} ieq 21)" />
-							
-							<label text="labels.drive" visibility="(:sp{i} ieq 21)" />
-							<knob id="dv{i}" visibility="(:sp{i} ieq 21)" />
-						</grid>
-					</group>
-				
-				</hbox>
-			
-			</tabs>
-		</group>
-		
-		<vbox spacing="4" expand="true">
-			<group text="groups.general" ipadding="0" fill="true">
-				<grid rows="3" cols="2">
-					<label text="labels.oversampling"/>
-					<combo id="ov"/>
-					
-					<label text="labels.pre_gain"/>
-					<knob id="ge" />
-					
-					<label text="labels.post_gain"/>
-					<knob id="gt" />
-				</grid>
-			</group>
-		</vbox>		
-	</hbox>
+          </group>
+          
+          <group text="groups.saturator_parameters" ipadding="0" fill="true">
+            <grid rows="20" cols="2">
+              <label text="labels.bypass"/>
+              <button id="bp{i}" />
+              
+              <label text="labels.gain"/>
+              <knob id="gn{i}" />
+              
+              <label text="labels.sub_bass"/>
+              <knob id="gs{i}" />
+              
+              <label text="labels.bass"/>
+              <knob id="gb{i}" />
+              
+              <label text="labels.mid"/>
+              <knob id="gm{i}" />
+              
+              <label text="labels.high"/>
+              <knob id="gh{i}" />
+            
+              <label text="labels.presence"/>
+              <knob id="gp{i}" />
+              
+              <label text="labels.air"/>
+              <knob id="ga{i}" />
+              
+              <label text="labels.saturator_function"/>
+              <combo id="sp{i}" />
+              
+              <label text="labels.slope" visibility="(:sp{i} ieq 0)" />
+              <knob id="sl{i}" visibility="(:sp{i} ieq 0)" />
+              
+              <label text="labels.shape" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)" />
+              <knob id="sh{i}" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)"/>
+              
+              <label text="labels.high_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              <knob id="hl{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              
+              <label text="labels.low_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              <knob id="ll{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              
+              <label text="labels.radius" visibility="(:sp{i} ieq 8)" />
+              <knob id="rd{i}" visibility="(:sp{i} ieq 8)" />
+              
+              <label text="labels.levels" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
+              <knob id="lv{i}" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
+              
+              <label text="labels.continuos_companding" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
+              <knob id="cp{i}" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
+              
+              <label text="labels.quantized_companding" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              <knob id="qp{i}" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              
+              <label text="labels.bias" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              <knob id="bs{i}" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              
+              <label text="labels.blend" visibility="(:sp{i} ieq 21)" />
+              <knob id="bl{i}" visibility="(:sp{i} ieq 21)" />
+              
+              <label text="labels.drive" visibility="(:sp{i} ieq 21)" />
+              <knob id="dv{i}" visibility="(:sp{i} ieq 21)" />
+            </grid>
+          </group>
+        
+        </hbox>
+        </ui:for>
+      </tabs>
+    </group>
+    
+    <vbox spacing="4" expand="true">
+      <group text="groups.general" ipadding="0" fill="true">
+          <grid rows="15" cols="2">
+              <label text="labels.oversampling"/>
+              <combo id="ov"/>
+            
+              <label text="labels.pre_gain"/>
+              <knob id="ge" />
+            
+              <label text="labels.sub_bass"/>
+              <knob id="gspr" />
+            
+              <label text="labels.bass"/>
+              <knob id="gbpr" />
+          
+              <label text="labels.mid"/>
+              <knob id="gmpr" />
+          
+              <label text="labels.high"/>
+              <knob id="ghpr" />
+        
+              <label text="labels.presence"/>
+              <knob id="gppr" />
+          
+              <label text="labels.air"/>
+              <knob id="gapr" />
+          
+              <label text="labels.post_gain"/>
+              <knob id="gt" />
+          
+              <label text="labels.sub_bass"/>
+              <knob id="spt" />
+          
+              <label text="labels.bass"/>
+              <knob id="bpt" />
+          
+              <label text="labels.mid"/>
+              <knob id="mpt" />
+          
+              <label text="labels.high"/>
+              <knob id="hpt" />
+        
+              <label text="labels.presence"/>
+              <knob id="ppt" />
+          
+              <label text="labels.air"/>
+              <knob id="apt" />
+          </grid>
+      </group>
+    </vbox>		
+  </hbox>
 </plugin>
