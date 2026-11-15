@@ -188,9 +188,9 @@ namespace lsp
             const size_t szof_tone_stack    = align_size(sizeof(tone_stack_t) * nStages, OPTIMAL_ALIGN);
             const size_t szof_tone_stacks   = szof_tone_stack * nChannels;
 
-            // We have 1x vDisplayOrdinate buffer per channel, plus 1x vDisplayAbscissa for the entire plugin.
+            // We have 1x vDisplayOrdinate buffer per stage and nStages stages per channel, plus 1x vDisplayAbscissa for the entire plugin.
             const size_t szof_display_buf   = meta::saturator::MESH_SIZE * sizeof(float);
-            const size_t szof_display_bufs  = (nChannels + 1) * szof_display_buf;
+            const size_t szof_display_bufs  = (nChannels * nStages + 1) * szof_display_buf;
 
 //            /** Each `ch_state_stage_t` object has:
 //             * 1x vfPV_pre_eq_pGain vector of nBands float
@@ -299,10 +299,11 @@ namespace lsp
 
             // We put a linear ramp between -1 to 1 inside vDisplayAbscissa
             vDisplayAbscissa[0] = 0.0f;
-            float step = 2.0f / (meta::saturator::MESH_SIZE - 1.0f);
-            for (size_t n=1; n<meta::saturator::MESH_SIZE; ++n)
+            float scale = 2.0f / meta::saturator::MESH_SIZE;
+            float bias = 0.5f * meta::saturator::MESH_SIZE;
+            for (size_t n=0; n < meta::saturator::MESH_SIZE; ++n)
             {
-                vDisplayAbscissa[n] = vDisplayAbscissa[n - 1] + n * step;
+                vDisplayAbscissa[n] = (n - bias) * scale;
             }
 
             // Bind ports
@@ -704,7 +705,7 @@ namespace lsp
 
         void saturator::configure_stage(stage_t *stage)
         {
-            if (stage->sShaper.nUpdate != 0)
+            if (stage->sShaper.nUpdate == 0)
                 return;
 
             if (stage->sShaper.nUpdate & UPD_SLOPE)
@@ -921,11 +922,12 @@ namespace lsp
 
                 if ((mesh != NULL) && (mesh->isEmpty()))
                 {
+                    // TODO: Memory leak here to fix.
                     stage->sShaper.sShaper.get_map(stage->vDisplayOrdinate, vDisplayAbscissa, meta::saturator::MESH_SIZE);
 
-                    dsp::copy(mesh->pvData[0], vDisplayAbscissa,        meta::saturator::MESH_SIZE);
-                    dsp::copy(mesh->pvData[1], stage->vDisplayOrdinate, meta::saturator::MESH_SIZE);
-                    mesh->data(2, meta::saturator::MESH_SIZE);
+//                    dsp::copy(mesh->pvData[0], vDisplayAbscissa,        meta::saturator::MESH_SIZE);
+//                    dsp::copy(mesh->pvData[1], stage->vDisplayOrdinate, meta::saturator::MESH_SIZE);
+//                    mesh->data(2, meta::saturator::MESH_SIZE);
                 }
 
                 stage->bMeshSync = false;

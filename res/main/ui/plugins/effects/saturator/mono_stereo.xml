@@ -24,7 +24,7 @@
 							<axis min="-1.0" max="1.0" color="graph_prim" angle="0.5" log="false" visibility="false"/>
 							
 							<!-- Meshes -->
-							<mesh id="vo{i}" width="3"/>
+							<mesh id="vo${i}" width="3"/>
 		
 							<!-- Text -->
 							<ui:attributes y="0" halign="1" valign="1" text="graph.values.x::2f">
@@ -47,64 +47,64 @@
           <group text="groups.saturator_parameters" ipadding="0" fill="true">
             <grid rows="20" cols="2">
               <label text="labels.bypass"/>
-              <button id="bp{i}" />
+              <button id="bp${i}" />
               
               <label text="labels.gain"/>
-              <knob id="gn{i}" />
+              <knob id="gn${i}" />
               
               <label text="labels.sub_bass"/>
-              <knob id="gs{i}" />
+              <knob id="gs${i}" />
               
               <label text="labels.bass"/>
-              <knob id="gb{i}" />
+              <knob id="gb${i}" />
               
               <label text="labels.mid"/>
-              <knob id="gm{i}" />
+              <knob id="gm${i}" />
               
               <label text="labels.high"/>
-              <knob id="gh{i}" />
+              <knob id="gh${i}" />
             
               <label text="labels.presence"/>
-              <knob id="gp{i}" />
+              <knob id="gp${i}" />
               
               <label text="labels.air"/>
-              <knob id="ga{i}" />
+              <knob id="ga${i}" />
               
               <label text="labels.saturator_function"/>
-              <combo id="sp{i}" />
+              <combo id="sp${i}" />
               
-              <label text="labels.slope" visibility="(:sp{i} ieq 0)" />
-              <knob id="sl{i}" visibility="(:sp{i} ieq 0)" />
+              <label text="labels.slope" visibility="(:sp${i} ieq 0)" />
+              <knob id="sl${i}" visibility="(:sp${i} ieq 0)" />
               
-              <label text="labels.shape" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)" />
-              <knob id="sh{i}" visibility="(:sp{i} ieq 1) or (:sp{i} ieq 2) or (:sp{i} ieq 3) or (:sp{i} ieq 4) or (:sp{i} ieq 5) or (:sp{i} ieq 9)"/>
+              <label text="labels.shape" visibility="(:sp${i} ieq 1) or (:sp${i} ieq 2) or (:sp${i} ieq 3) or (:sp${i} ieq 4) or (:sp${i} ieq 5) or (:sp${i} ieq 9)" />
+              <knob id="sh${i}" visibility="(:sp${i} ieq 1) or (:sp${i} ieq 2) or (:sp${i} ieq 3) or (:sp${i} ieq 4) or (:sp${i} ieq 5) or (:sp${i} ieq 9)"/>
               
-              <label text="labels.high_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-              <knob id="hl{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              <label text="labels.high_level" visibility="(:sp${i} ieq 6) or (:sp${i} ieq 7)" />
+              <knob id="hl${i}" visibility="(:sp${i} ieq 6) or (:sp${i} ieq 7)" />
               
-              <label text="labels.low_level" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
-              <knob id="ll{i}" visibility="(:sp{i} ieq 6) or (:sp{i} ieq 7)" />
+              <label text="labels.low_level" visibility="(:sp${i} ieq 6) or (:sp${i} ieq 7)" />
+              <knob id="ll${i}" visibility="(:sp${i} ieq 6) or (:sp${i} ieq 7)" />
               
-              <label text="labels.radius" visibility="(:sp{i} ieq 8)" />
-              <knob id="rd{i}" visibility="(:sp{i} ieq 8)" />
+              <label text="labels.radius" visibility="(:sp${i} ieq 8)" />
+              <knob id="rd${i}" visibility="(:sp${i} ieq 8)" />
               
-              <label text="labels.levels" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
-              <knob id="lv{i}" visibility="(:sp{i} ieq 10) or (:sp{i} ieq 11) or (:sp{i} ieq 12)" />
+              <label text="labels.levels" visibility="(:sp${i} ieq 10) or (:sp${i} ieq 11) or (:sp${i} ieq 12)" />
+              <knob id="lv${i}" visibility="(:sp${i} ieq 10) or (:sp${i} ieq 11) or (:sp${i} ieq 12)" />
               
-              <label text="labels.continuos_companding" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
-              <knob id="cp{i}" visibility="(:sp{i} ieq 13) or (:sp{i} ieq 14) or (:sp{i} ieq 15) or (:sp{i} ieq 16)" />
+              <label text="labels.continuos_companding" visibility="(:sp${i} ieq 13) or (:sp${i} ieq 14) or (:sp${i} ieq 15) or (:sp${i} ieq 16)" />
+              <knob id="cp${i}" visibility="(:sp${i} ieq 13) or (:sp${i} ieq 14) or (:sp${i} ieq 15) or (:sp${i} ieq 16)" />
               
-              <label text="labels.quantized_companding" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-              <knob id="qp{i}" visibility="(:sp{i} ieq 17) or (:sp{i} ieq 18) or (:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              <label text="labels.quantized_companding" visibility="(:sp${i} ieq 17) or (:sp${i} ieq 18) or (:sp${i} ieq 19) or (:sp${i} ieq 20)" />
+              <knob id="qp${i}" visibility="(:sp${i} ieq 17) or (:sp${i} ieq 18) or (:sp${i} ieq 19) or (:sp${i} ieq 20)" />
               
-              <label text="labels.bias" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
-              <knob id="bs{i}" visibility="(:sp{i} ieq 19) or (:sp{i} ieq 20)" />
+              <label text="labels.bias" visibility="(:sp${i} ieq 19) or (:sp${i} ieq 20)" />
+              <knob id="bs${i}" visibility="(:sp${i} ieq 19) or (:sp${i} ieq 20)" />
               
-              <label text="labels.blend" visibility="(:sp{i} ieq 21)" />
-              <knob id="bl{i}" visibility="(:sp{i} ieq 21)" />
+              <label text="labels.blend" visibility="(:sp${i} ieq 21)" />
+              <knob id="bl${i}" visibility="(:sp${i} ieq 21)" />
               
-              <label text="labels.drive" visibility="(:sp{i} ieq 21)" />
-              <knob id="dv{i}" visibility="(:sp{i} ieq 21)" />
+              <label text="labels.drive" visibility="(:sp${i} ieq 21)" />
+              <knob id="dv${i}" visibility="(:sp${i} ieq 21)" />
             </grid>
           </group>
         
