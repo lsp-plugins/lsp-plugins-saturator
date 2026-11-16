@@ -223,12 +223,6 @@ namespace lsp
             lsp_guard_assert(uint8_t * const save = ptr);
 
             // Assign all resources
-            vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
-            vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
-            vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
-            vOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
-            vDisplayAbscissa        = advance_ptr_bytes<float>(ptr, szof_display_bufs);
-
             vChannels = advance_ptr_bytes<channel_t>(ptr, szof_channels);
 
             for (size_t i=0; i < nChannels; ++i)
@@ -254,8 +248,6 @@ namespace lsp
 //                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                     c->vStages[s].sToneStack.sEQ.construct();
                     c->vStages[s].sToneStack.sEQ.init(nFilters, meta::saturator::FFT_RANK);
-
-                    c->vStages[s].vDisplayOrdinate = advance_ptr_bytes<float>(ptr, szof_display_bufs);
                 }
 
 //                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
@@ -277,6 +269,20 @@ namespace lsp
 
                 c->pIn                  = NULL;
                 c->pOut                 = NULL;
+            }
+
+            vBuffer                 = advance_ptr_bytes<float>(ptr, szof_buf);
+            vOSBuffer               = advance_ptr_bytes<float>(ptr, szof_osbuf);
+            vOSStageBuffer          = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            vOSStageAccBuffer       = advance_ptr_bytes<float>(ptr, szof_stage_buf);
+            vDisplayAbscissa        = advance_ptr_bytes<float>(ptr, szof_display_buf);
+
+            for (size_t i=0; i<nChannels; ++i)
+            {
+                for (size_t s=0; s<nStages; ++s)
+                {
+                    vChannels[i].vStages[s].vDisplayOrdinate = advance_ptr_bytes<float>(ptr, szof_display_buf);
+                }
             }
 
             // Check that allocation did not went out of bounds. There will be an error in log otherwise
@@ -925,9 +931,9 @@ namespace lsp
                     // TODO: Memory leak here to fix.
                     stage->sShaper.sShaper.get_map(stage->vDisplayOrdinate, vDisplayAbscissa, meta::saturator::MESH_SIZE);
 
-//                    dsp::copy(mesh->pvData[0], vDisplayAbscissa,        meta::saturator::MESH_SIZE);
-//                    dsp::copy(mesh->pvData[1], stage->vDisplayOrdinate, meta::saturator::MESH_SIZE);
-//                    mesh->data(2, meta::saturator::MESH_SIZE);
+                    dsp::copy(mesh->pvData[0], vDisplayAbscissa,        meta::saturator::MESH_SIZE);
+                    dsp::copy(mesh->pvData[1], stage->vDisplayOrdinate, meta::saturator::MESH_SIZE);
+                    mesh->data(2, meta::saturator::MESH_SIZE);
                 }
 
                 stage->bMeshSync = false;
