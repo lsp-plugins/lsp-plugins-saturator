@@ -265,7 +265,7 @@ namespace lsp
 //                c->sStateStage.vfPV_post_eq_pEnable     = advance_ptr_bytes<float>(ptr, szof_stage_array);
 //
 //                // Only now we are ready to initialize the stage. Allocation must happen first.
-//                init_state_stage(c);
+                init_state_stage(c);
 
                 c->pIn                  = NULL;
                 c->pOut                 = NULL;

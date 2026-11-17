@@ -53,22 +53,46 @@
               <knob id="gn${i}" />
               
               <label text="labels.sub_bass"/>
-              <knob id="gs${i}" />
+              <grid rows="1" cols="3">
+                <knob id="gs${i}" />
+                <knob id="fs${i}" />
+                <button id="es${i}" />
+              </grid>
               
               <label text="labels.bass"/>
-              <knob id="gb${i}" />
+              <grid rows="1" cols="3">
+                <knob id="gb${i}" />
+                <knob id="fb${i}" />
+                <button id="eb${i}" />
+              </grid>
               
               <label text="labels.mid"/>
-              <knob id="gm${i}" />
+              <grid rows="1" cols="3">
+                <knob id="gm${i}" />
+                <knob id="fm${i}" />
+                <button id="em${i}" />
+              </grid>
               
               <label text="labels.high"/>
-              <knob id="gh${i}" />
+              <grid rows="1" cols="3">
+                <knob id="gh${i}" />
+                <knob id="fh${i}" />
+                <button id="eh${i}" />
+              </grid>
             
               <label text="labels.presence"/>
-              <knob id="gp${i}" />
+              <grid rows="1" cols="3">
+                <knob id="gp${i}" />
+                <knob id="fp${i}" />
+                <button id="ep${i}" />
+              </grid>
               
               <label text="labels.air"/>
-              <knob id="ga${i}" />
+              <grid rows="1" cols="3">
+                <knob id="ga${i}" />
+                <knob id="fa${i}" />
+                <button id="ea${i}" />
+              </grid>
               
               <label text="labels.saturator_function"/>
               <combo id="sp${i}" />
@@ -123,43 +147,91 @@
               <knob id="ge" />
             
               <label text="labels.sub_bass"/>
-              <knob id="gspr" />
+              <grid rows="1" cols="3">
+                <knob id="gspr" />
+                <knob id="fspr" />
+                <button id="espr" />
+              </grid>
             
               <label text="labels.bass"/>
-              <knob id="gbpr" />
+             <grid rows="1" cols="3">
+                <knob id="gbpr" />
+                <knob id="fbpr" />
+                <button id="ebpr" />
+              </grid>
           
               <label text="labels.mid"/>
-              <knob id="gmpr" />
+              <grid rows="1" cols="3">
+                <knob id="gmpr" />
+                <knob id="fmpr" />
+                <button id="empr" />
+              </grid>
           
               <label text="labels.high"/>
-              <knob id="ghpr" />
+              <grid rows="1" cols="3">
+                <knob id="ghpr" />
+                <knob id="fhpr" />
+                <button id="ehpr" />
+              </grid>
         
               <label text="labels.presence"/>
-              <knob id="gppr" />
+              <grid rows="1" cols="3">
+                <knob id="gppr" />
+                <knob id="fppr" />
+                <button id="eppr" />
+              </grid>
           
               <label text="labels.air"/>
-              <knob id="gapr" />
+              <grid rows="1" cols="3">
+                <knob id="gapr" />
+                <knob id="fapr" />
+                <button id="eapr" />
+              </grid>
           
               <label text="labels.post_gain"/>
               <knob id="gt" />
           
               <label text="labels.sub_bass"/>
-              <knob id="spt" />
+              <grid rows="1" cols="3">
+                <knob id="gspt" />
+                <knob id="fspt" />
+                <button id="espt" />
+              </grid>
           
               <label text="labels.bass"/>
-              <knob id="bpt" />
+              <grid rows="1" cols="3">
+                <knob id="gbpt" />
+                <knob id="fbpt" />
+                <button id="ebpt" />
+              </grid>
           
               <label text="labels.mid"/>
-              <knob id="mpt" />
+              <grid rows="1" cols="3">
+                <knob id="gmpt" />
+                <knob id="fmpt" />
+                <button id="empt" />
+              </grid>
           
               <label text="labels.high"/>
-              <knob id="hpt" />
+              <grid rows="1" cols="3">
+                <knob id="ghpt" />
+                <knob id="fhpt" />
+                <button id="ehpt" />
+              </grid>
         
               <label text="labels.presence"/>
-              <knob id="ppt" />
+              <grid rows="1" cols="3">
+                <knob id="gppt" />
+                <knob id="fppt" />
+                <button id="eppt" />
+              </grid>
           
               <label text="labels.air"/>
-              <knob id="apt" />
+              <grid rows="1" cols="3">
+                <knob id="gapt" />
+                <knob id="fapt" />
+                <button id="eapt" />
+              </grid>
           </grid>
       </group>
     </vbox>		
