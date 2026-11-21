@@ -450,7 +450,7 @@ namespace lsp
                     c->sPreStack.sEQ.destroy();
                     c->sOversampler.sOvs.destroy();
 
-                    for (size_t s = 0; s>nStages; ++s)
+                    for (size_t s=0; s<nStages; ++s)
                     {
                         c->vStages[s].sBypass.destroy();
 
@@ -496,9 +496,10 @@ namespace lsp
                 configure_quality_filters(&c->sPreStack);
                 configure_tone_stack(&c->sPreStack);
 
-                c->sOversampler.nOverSampleRate = c->sOversampler.nOversampling * nSampleRate;
+//                c->sOversampler.nOverSampleRate = c->sOversampler.nOversampling * nSampleRate;
+                configure_oversampler(&c->sOversampler);
 
-                for (size_t s = 0; s>nStages; ++s)
+                for (size_t s=0; s<nStages; ++s)
                 {
                     c->vStages[s].sBypass.init(c->sOversampler.nOverSampleRate);
 
@@ -951,13 +952,13 @@ namespace lsp
                 for (size_t s=0; s<nStages; ++s)
                 {
                     process_stage(&c->vStages[s], vOSStageAccBuffer, vOSStageAccBuffer, to_do);
-                    dsp::copy(dst, vOSStageAccBuffer, to_do);
-
-                    dst     += to_do;
-                    src     += to_do;
-                    n       += to_do;
                 }
 
+                dsp::copy(dst, vOSStageAccBuffer, to_do);
+
+                dst     += to_do;
+                src     += to_do;
+                n       += to_do;
             }
         }
 
@@ -1094,7 +1095,8 @@ namespace lsp
 
         void saturator::update_stage_settings(stage_t *stage)
         {
-            stage->sBypass.set_bypass(stage->pBypass->value());
+            bool bypass = stage->pBypass->value() >= 0.5f;
+            stage->sBypass.set_bypass(bypass);
 
             float gain = stage->pGain->value();
             if (gain != stage->fPV_pGain)
@@ -1117,6 +1119,7 @@ namespace lsp
                 c->sBypass.set_bypass(bypass);
 
                 // Pre
+                c->fPV_pPreGain = c->pPreGain->value();
                 update_tone_stack_settings(&c->sPreStack);
 
                 // Oversampler
@@ -1130,6 +1133,7 @@ namespace lsp
                 }
 
                 // Post
+                c->fPV_pPostGain = c->pPostGain->value();
                 update_tone_stack_settings(&c->sPostStack);
             }
 
