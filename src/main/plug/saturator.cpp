@@ -234,6 +234,7 @@ namespace lsp
 //                c->sPreStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                 c->sPreStack.sEQ.construct();
                 c->sPreStack.sEQ.init(nFilters, meta::saturator::FFT_RANK);
+                c->sPreStack.sEQ.set_mode(dspu::EQM_IIR);
 
                 c->sOversampler.sOvs.construct();
                 c->sOversampler.sOvs.init();
@@ -248,11 +249,13 @@ namespace lsp
 //                    c->vStages[s].sToneStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                     c->vStages[s].sToneStack.sEQ.construct();
                     c->vStages[s].sToneStack.sEQ.init(nFilters, meta::saturator::FFT_RANK);
+                    c->vStages[s].sToneStack.sEQ.set_mode(dspu::EQM_IIR);
                 }
 
 //                c->sPostStack.vBands = advance_ptr_bytes<eq_band_t>(ptr, szof_eq_bands);
                 c->sPostStack.sEQ.construct();
                 c->sPostStack.sEQ.init(nFilters, meta::saturator::FFT_RANK);
+                c->sPostStack.sEQ.set_mode(dspu::EQM_IIR);
 
 //                c->sStateStage.vfPV_pre_eq_pGain        = advance_ptr_bytes<float>(ptr, szof_stage_array);
 //                c->sStateStage.vfPV_pre_eq_pSolo        = advance_ptr_bytes<float>(ptr, szof_stage_array);
@@ -811,7 +814,7 @@ namespace lsp
             stack->sAntialFP.nType      = dspu::FLT_MT_LRX_LOPASS;
             stack->sAntialFP.fFreq      = antial;
             stack->sAntialFP.fFreq2     = antial;
-            stack->sEQ.set_params(IDX_ANTIAL, &stack->sDCBlockFP);
+            stack->sEQ.set_params(IDX_ANTIAL, &stack->sAntialFP);
         }
 
         void saturator::configure_stack_band(dspu::Equalizer *eq, stack_band_t *band, filter_type_t type)
@@ -849,6 +852,8 @@ namespace lsp
             }
 
             eq->set_params(band->nEQIndex, &band->sFP);
+
+            band->bRecompute = false;
         }
 
         void saturator::configure_tone_stack(tone_stack_t *stack)
